@@ -86,6 +86,9 @@
   input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:24px;height:24px;border-radius:50%;background:var(--ink);cursor:pointer;border:3px solid var(--card);box-shadow:0 1px 4px rgba(0,0,0,.22);}
   input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:50%;background:var(--ink);cursor:pointer;border:3px solid var(--card);box-shadow:0 1px 4px rgba(0,0,0,.22);}
   .hint{font-size:11.5px;color:var(--ink-soft);margin-top:6px;}
+  .note-input{width:100%;border:1px solid var(--line-strong);border-radius:11px;background:var(--chip);color:var(--ink);font-family:var(--font-ui);font-size:14px;line-height:1.55;padding:10px 12px;resize:vertical;min-height:72px;}
+  .note-input:focus{outline:none;border-color:var(--ink-soft);background:var(--card);}
+  .note-input::placeholder{color:var(--ink-soft);}
 
   /* ---------- settings modal ---------- */
   .overlay{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.45);display:none;align-items:flex-end;}
@@ -109,7 +112,7 @@
   .stepper{display:flex;align-items:center;border:1px solid var(--line-strong);border-radius:11px;overflow:hidden;}
   .stepper button{width:38px;height:38px;border:none;background:var(--card);color:var(--ink);font-size:20px;cursor:pointer;font-family:var(--font-ui);}
   .stepper button:active{background:var(--chip);}
-  .stepper input{width:50px;height:38px;border:none;border-left:1px solid var(--line);border-right:1px solid var(--line);text-align:center;background:var(--card);color:var(--ink);font-family:var(--font-num);font-weight:500;font-size:15px;}
+  .stepper input{width:54px;height:38px;border:none;border-left:1px solid var(--line);border-right:1px solid var(--line);text-align:center;background:var(--card);color:var(--ink);font-family:var(--font-num);font-weight:500;font-size:15px;}
   .stepper input:focus{outline:none;}
   .sheet-foot{padding:14px 20px calc(16px + env(safe-area-inset-bottom));border-top:1px solid var(--line);}
   .reset-weights{width:100%;padding:13px;border-radius:13px;border:1px solid var(--line-strong);background:transparent;color:var(--ink-soft);font-family:var(--font-ui);font-size:14px;font-weight:500;cursor:pointer;}
@@ -164,6 +167,9 @@
     <div class="sheet-body">
       <div class="sec-label" id="secWeightsLabel">权重</div>
       <div id="weightList"></div>
+      <div class="sec-label" id="secRangesLabel">评分范围</div>
+      <div class="thresh-note" id="rangeNote"></div>
+      <div id="rangeList"></div>
       <div class="sec-label" id="secThreshLabel">评判阈值</div>
       <div class="thresh-note" id="threshNote"></div>
       <div id="threshList"></div>
@@ -183,9 +189,11 @@
 
    字段：id 唯一key / label 名称 / icon 图标 / group 分组id / weight 满分 / default 默认状态
    类型 type：
-     'segment' 按钮项 options:[{label,factor}]  得分=factor×weight (factor 可负)
+     'segment' 按钮项 options:[{label,factor}]  得分=factor×weight (factor 可负，可做扣分项)
      'direct'  直接打分滑块 0~weight，得分=滑块值  (step/default/unit/hint)
      'smooth'  平滑映射滑块 真实数值→0~weight  (min/max/lowBound/highBound/step/unit/default; inverted=越小越好)
+               lowBound/highBound 为默认范围，可在设置面板中调整
+     'note'    纯文本备注，不计分，内容会进入一键复制
    ========================================================================= */
 
 const GROUPS = {
@@ -193,46 +201,71 @@ const GROUPS = {
   space:    {zh:'工作与空间', ja:'仕事とスペース'},
   location: {zh:'位置与环境', ja:'立地と環境'},
   cost:     {zh:'经济与条件', ja:'費用と条件'},
+  defect:   {zh:'潜在减分项', ja:'マイナス要素'},
   subj:     {zh:'主观',       ja:'主観'},
 };
 
 const CONFIG = [
-  { id:'balcony', label:{zh:'阳台',ja:'バルコニー'}, icon:'☀', group:'comfort', type:'segment', weight:2, default:0,
+  // —— 生活舒适度 ——
+  { id:'sunlight', label:{zh:'阳光光照',ja:'日当たり'}, icon:'☀', group:'comfort', type:'direct', weight:3, step:0.5, default:0,
+    hint:{zh:'0 阴暗 — 满分 充足', ja:'0 暗い — 満点 明るい'} },
+  { id:'balcony', label:{zh:'阳台',ja:'バルコニー'}, icon:'❏', group:'comfort', type:'segment', weight:2, default:0,
     options:[{label:{zh:'无阳台',ja:'なし'},factor:0},{label:{zh:'小阳台',ja:'小さい'},factor:0.5},{label:{zh:'好阳台',ja:'広い'},factor:1}] },
-  { id:'bathtub', label:{zh:'浴缸',ja:'バスタブ'}, icon:'◗', group:'comfort', type:'segment', weight:1, default:0,
+  { id:'bathtub', label:{zh:'浴缸',ja:'バスタブ'}, icon:'◗', group:'comfort', type:'segment', weight:2, default:0,
     options:[{label:{zh:'无',ja:'なし'},factor:0},{label:{zh:'有',ja:'あり'},factor:1}] },
-  { id:'kitchen', label:{zh:'厨房',ja:'キッチン'}, icon:'▤', group:'comfort', type:'segment', weight:2, default:0,
+  { id:'kitchen', label:{zh:'厨房',ja:'キッチン'}, icon:'▤', group:'comfort', type:'segment', weight:4, default:0,
     options:[{label:{zh:'无',ja:'なし'},factor:0},{label:{zh:'简易',ja:'簡易'},factor:0.5},{label:{zh:'完整',ja:'充実'},factor:1}] },
   { id:'guest_wc', label:{zh:'客人洗手间',ja:'来客用トイレ'}, icon:'◔', group:'comfort', type:'segment', weight:1, default:0,
     options:[{label:{zh:'无',ja:'なし'},factor:0},{label:{zh:'有',ja:'あり'},factor:1}] },
 
-  { id:'workspace', label:{zh:'工作空间',ja:'ワークスペース'}, icon:'▦', group:'space', type:'direct', weight:4, step:1, default:0,
-    hint:{zh:'0 无 · 1–3 卧室/客厅办公 · 4 独立书房', ja:'0 なし · 1–3 寝室/リビング作業 · 4 書斎'} },
-  { id:'area', label:{zh:'面积',ja:'広さ'}, icon:'⬚', group:'space', type:'smooth', weight:4,
-    min:30, max:100, lowBound:50, highBound:77, step:1, unit:'㎡', default:50 },
-  { id:'floor', label:{zh:'楼层',ja:'階数'}, icon:'⌂', group:'space', type:'segment', weight:2, default:1,
+  // —— 工作与空间 ——
+  { id:'workspace', label:{zh:'工作空间',ja:'ワークスペース'}, icon:'▦', group:'space', type:'direct', weight:6, step:1, default:0,
+    hint:{zh:'0 无 · 中段 卧室/客厅办公 · 满分 独立书房', ja:'0 なし · 中間 寝室/リビング作業 · 満点 書斎'} },
+  { id:'area', label:{zh:'面积',ja:'広さ'}, icon:'⬚', group:'space', type:'smooth', weight:10,
+    min:30, max:120, lowBound:50, highBound:80, step:1, unit:'㎡', default:50 },
+  { id:'openness', label:{zh:'空间开放感',ja:'開放感'}, icon:'⤢', group:'space', type:'direct', weight:2, step:0.5, default:0,
+    hint:{zh:'0 压抑 — 满分 开阔', ja:'0 圧迫 — 満点 開放的'} },
+  { id:'floor', label:{zh:'楼层',ja:'階数'}, icon:'⌂', group:'space', type:'segment', weight:4, default:1,
     options:[{label:{zh:'0–1楼',ja:'0〜1階'},factor:1},{label:{zh:'其他',ja:'その他'},factor:0},{label:{zh:'顶楼',ja:'最上階'},factor:-0.5}] },
 
+  // —— 位置与环境 ——
   { id:'parking', label:{zh:'停车场',ja:'駐車場'}, icon:'⊟', group:'location', type:'segment', weight:1, default:0,
     options:[{label:{zh:'无',ja:'なし'},factor:0},{label:{zh:'有',ja:'あり'},factor:1}] },
-  { id:'commute', label:{zh:'通勤时间',ja:'通勤時間'}, icon:'➤', group:'location', type:'segment', weight:3, default:3,
-    options:[{label:{zh:'≤10分',ja:'10分以内'},factor:1},{label:{zh:'≤13分',ja:'13分以内'},factor:0.667},{label:{zh:'≤15分',ja:'15分以内'},factor:0.333},{label:{zh:'>15分',ja:'15分超'},factor:0}] },
-  { id:'env', label:{zh:'环境',ja:'環境'}, icon:'❡', group:'location', type:'direct', weight:3, step:0.5, default:0,
+  { id:'commute', label:{zh:'通勤时间',ja:'通勤時間'}, icon:'➤', group:'location', type:'segment', weight:7, default:3,
+    times:[10,13,15],
+    options:[{factor:1},{factor:0.667},{factor:0.333},{factor:0}],
+    optionLabel:(idx,times)=>{ const last=times[times.length-1];
+      return idx<times.length ? {zh:'≤'+times[idx]+'分',ja:times[idx]+'分以内'} : {zh:'>'+last+'分',ja:last+'分超'}; } },
+  { id:'env', label:{zh:'环境',ja:'環境'}, icon:'❡', group:'location', type:'direct', weight:8, step:0.5, default:0,
     hint:{zh:'0 差 — 满分 好', ja:'0 悪い — 満点 良い'} },
 
-  { id:'rent', label:{zh:'月租金',ja:'月額家賃'}, icon:'€', group:'cost', type:'smooth', weight:3,
-    min:600, max:1300, lowBound:800, highBound:1100, inverted:true, step:10, unit:'€', default:1100 },
-  { id:'reno', label:{zh:'装修状况',ja:'内装の状態'}, icon:'✎', group:'cost', type:'direct', weight:2, step:0.5, default:0,
+  // —— 经济与条件 ——
+  { id:'rent', label:{zh:'月租金',ja:'月額家賃'}, icon:'€', group:'cost', type:'smooth', weight:6,
+    min:400, max:1600, lowBound:600, highBound:1100, inverted:true, step:10, unit:'€', default:1000 },
+  { id:'reno', label:{zh:'装修状况',ja:'内装の状態'}, icon:'✎', group:'cost', type:'direct', weight:3, step:0.5, default:0,
     hint:{zh:'0 旧 — 满分 新', ja:'0 古い — 満点 新しい'} },
+  { id:'pet', label:{zh:'宠物政策',ja:'ペット可否'}, icon:'❖', group:'cost', type:'segment', weight:1, default:1,
+    options:[{label:{zh:'明确禁止',ja:'明確に不可'},factor:-3},{label:{zh:'没说',ja:'記載なし'},factor:0},{label:{zh:'明确允许',ja:'明確に可'},factor:1}] },
   { id:'landlord', label:{zh:'房东 / 机构',ja:'大家 / 管理会社'}, icon:'☻', group:'cost', type:'segment', weight:1, default:2,
     options:[{label:{zh:'很差',ja:'悪い'},factor:-2},{label:{zh:'一般',ja:'ふつう'},factor:-1},{label:{zh:'未知',ja:'不明'},factor:0},{label:{zh:'好人',ja:'良い'},factor:1}] },
 
-  { id:'subjective', label:{zh:'主观感受',ja:'直感評価'}, icon:'♥', group:'subj', type:'direct', weight:5, step:0.5, default:0,
+  // —— 潜在减分项（只扣分，不计入满分）——
+  { id:'tiles', label:{zh:'怪异墙壁 / 瓷砖',ja:'変な壁 / タイル'}, icon:'▩', group:'defect', type:'segment', weight:2, default:0,
+    options:[{label:{zh:'没有',ja:'問題なし'},factor:0},{label:{zh:'有',ja:'あり'},factor:-1}] },
+  { id:'hood', label:{zh:'抽油烟机',ja:'レンジフード'}, icon:'♨', group:'defect', type:'segment', weight:2, default:0,
+    options:[{label:{zh:'可安装',ja:'設置可'},factor:0},{label:{zh:'无法安装',ja:'設置不可'},factor:-1}] },
+  { id:'fridge', label:{zh:'大冰箱',ja:'大型冷蔵庫'}, icon:'❄', group:'defect', type:'segment', weight:3, default:0,
+    options:[{label:{zh:'放得下',ja:'置ける'},factor:0},{label:{zh:'放不下',ja:'置けない'},factor:-1}] },
+
+  // —— 主观 ——
+  { id:'subjective', label:{zh:'主观感受',ja:'直感評価'}, icon:'♥', group:'subj', type:'direct', weight:10, step:0.5, default:0,
     hint:{zh:'凭直觉打分 · 0 无感 — 满分 一见钟情', ja:'直感で · 0 無感 — 満点 ひとめ惚れ'} },
+  { id:'note', label:{zh:'特殊备注',ja:'特記事項'}, icon:'✐', group:'subj', type:'note', default:'',
+    placeholder:{zh:'其他想记的，会一并复制…', ja:'その他のメモ、コピーに含まれます…'} },
 ];
 
-// 评判阈值默认值（绝对分数）。强烈推荐 ≥ good，值得考虑 ≥ ok，一般 ≥ mid，低于 mid 为不推荐
-const DEFAULT_THRESHOLDS = { good:7.0, ok:5.5, mid:3.5 }; // 10 分制（强烈推荐 / 值得考虑 / 一般）
+// 评判阈值默认值（10 分制）。强烈推荐 ≥ good，值得考虑 ≥ ok，一般 ≥ mid，低于 mid 为不推荐
+const DEFAULT_THRESHOLDS = { good:6, ok:5, mid:4 };
 
 const UI = {
   title:        {zh:'房源评分', ja:'物件スコア'},
@@ -247,23 +280,33 @@ const UI = {
   sheetSub:     {zh:'修改后自动保存', ja:'変更は自動保存'},
   done:         {zh:'完成', ja:'完了'},
   secWeights:   {zh:'权重（每项满分）', ja:'重み（各項目の満点）'},
+  secRanges:    {zh:'评分范围', ja:'スコア範囲'},
+  rangeNote:    {zh:'设定真实数值映射到分数的区间', ja:'実数値がスコアに変換される区間'},
+  rangeAreaLow: {zh:'面积 · 0 分线以下', ja:'広さ · 0点ライン以下'},
+  rangeAreaHigh:{zh:'面积 · 满分线以上', ja:'広さ · 満点ライン以上'},
+  rangeRentLow: {zh:'租金 · 满分线以下', ja:'家賃 · 満点ライン以下'},
+  rangeRentHigh:{zh:'租金 · 0 分线以上', ja:'家賃 · 0点ライン以上'},
+  rangeCommutePre:{zh:'通勤 · 第 ', ja:'通勤 · '},
+  rangeCommuteSuf:{zh:' 档 ≤', ja:' 段階目 ≤'},
   secThresh:    {zh:'评判阈值', ja:'判定しきい値'},
   threshNote:   {zh:'10 分制 · 分数达到该线即归入对应评价', ja:'10点満点 · スコアがこの値以上で各評価に'},
   wsPre:        {zh:'当前满分合计', ja:'現在の満点合計'},
   wsSuf:        {zh:'分', ja:'点'},
   resetAll:     {zh:'恢复默认设置', ja:'設定を初期化'},
-  confirmReset: {zh:'清空本次所有评分？（权重和阈值会保留）', ja:'今回のスコアをすべてクリアしますか？（重みとしきい値は保持）'},
-  confirmResetAll:{zh:'恢复所有权重和阈值为默认值？', ja:'すべての重みとしきい値を初期値に戻しますか？'},
+  confirmReset: {zh:'清空本次所有评分？（权重、范围和阈值会保留）', ja:'今回のスコアをすべてクリアしますか？（重み・範囲・しきい値は保持）'},
+  confirmResetAll:{zh:'恢复所有权重、范围和阈值为默认值？', ja:'すべての重み・範囲・しきい値を初期値に戻しますか？'},
 };
 
 /* ===================== 逻辑 / ロジック ===================== */
 
-const LS_WEIGHTS = 'houseScoreWeights_v1';
-const LS_THRESH  = 'houseScoreThresholds_v2';
+const LS_WEIGHTS = 'houseScoreWeights_v2';
+const LS_THRESH  = 'houseScoreThresholds_v3';
+const LS_PARAMS  = 'houseScoreParams_v1';
 const LS_LANG    = 'houseScoreLang_v1';
 
 const round1 = n => Math.round(n*10)/10;
 const clamp = (n,a,b)=>Math.max(a,Math.min(b,n));
+const byId = id => CONFIG.find(i=>i.id===id);
 
 // 语言
 let lang = 'zh';
@@ -271,7 +314,7 @@ try{ const sl = localStorage.getItem(LS_LANG); if(sl==='zh'||sl==='ja') lang = s
 function L(field){ if(field==null) return ''; if(typeof field==='string') return field; return field[lang] || field.zh || ''; }
 
 // 权重
-function defaultWeights(){ const w={}; CONFIG.forEach(i=>w[i.id]=i.weight); return w; }
+function defaultWeights(){ const w={}; CONFIG.forEach(i=>{ if(i.weight!=null) w[i.id]=i.weight; }); return w; }
 let weights = defaultWeights();
 try{
   const saved = JSON.parse(localStorage.getItem(LS_WEIGHTS) || '{}');
@@ -295,24 +338,73 @@ function normalizeThresholds(){
 normalizeThresholds();
 function persistThresholds(){ try{ localStorage.setItem(LS_THRESH, JSON.stringify(thresholds)); }catch(e){} }
 
+// 可配置评分参数（smooth 范围 + 通勤档位）
+function defaultParams(){
+  return {
+    area:    { low:byId('area').lowBound,  high:byId('area').highBound },
+    rent:    { low:byId('rent').lowBound,  high:byId('rent').highBound },
+    commute: { times:[...byId('commute').times] },
+  };
+}
+let params = defaultParams();
+try{
+  const s = JSON.parse(localStorage.getItem(LS_PARAMS) || '{}');
+  if(s.area && typeof s.area.low==='number' && typeof s.area.high==='number') params.area = {low:s.area.low, high:s.area.high};
+  if(s.rent && typeof s.rent.low==='number' && typeof s.rent.high==='number') params.rent = {low:s.rent.low, high:s.rent.high};
+  if(s.commute && Array.isArray(s.commute.times)) params.commute = {times:s.commute.times.slice(0,3)};
+}catch(e){}
+function normalizeParams(){
+  const a=byId('area'), r=byId('rent');
+  params.area.low  = clamp(Math.round(params.area.low),  a.min, a.max);
+  params.area.high = clamp(Math.round(params.area.high), a.min, a.max);
+  if(params.area.high <= params.area.low) params.area.high = Math.min(a.max, params.area.low + a.step);
+  params.rent.low  = clamp(Math.round(params.rent.low),  r.min, r.max);
+  params.rent.high = clamp(Math.round(params.rent.high), r.min, r.max);
+  if(params.rent.high <= params.rent.low) params.rent.high = Math.min(r.max, params.rent.low + r.step);
+  let t = params.commute.times.map(x=>Math.max(1, Math.round(x)));
+  while(t.length<3) t.push((t[t.length-1]||0)+1);
+  if(t[1]<=t[0]) t[1]=t[0]+1;
+  if(t[2]<=t[1]) t[2]=t[1]+1;
+  params.commute.times = t.slice(0,3);
+}
+normalizeParams();
+function persistParams(){ try{ localStorage.setItem(LS_PARAMS, JSON.stringify(params)); }catch(e){} }
+
+function getRange(it){
+  const p = params[it.id];
+  if(p && typeof p.low==='number') return {low:p.low, high:p.high};
+  return {low:it.lowBound, high:it.highBound};
+}
+function currentTimes(it){
+  const p = params[it.id];
+  return (p && Array.isArray(p.times)) ? p.times : it.times;
+}
+function getOptionLabel(it, idx){
+  if(it.optionLabel) return it.optionLabel(idx, currentTimes(it));
+  return it.options[idx].label;
+}
+
 // 本次输入状态（不持久化）
 function defaultState(){ const s={}; CONFIG.forEach(i=>s[i.id]=i.default); return s; }
 let state = defaultState();
 
 function itemScore(it){
+  if(it.type==='note') return 0;
   const w = weights[it.id], v = state[it.id];
   if(it.type==='segment') return it.options[v].factor * w;
   if(it.type==='direct')  return clamp(v,0,w);
   if(it.type==='smooth'){
-    let f = it.inverted ? (it.highBound - v)/(it.highBound - it.lowBound)
-                        : (v - it.lowBound)/(it.highBound - it.lowBound);
+    const r = getRange(it);
+    let f = it.inverted ? (r.high - v)/(r.high - r.low)
+                        : (v - r.low)/(r.high - r.low);
     return clamp(f,0,1) * w;
   }
   return 0;
 }
 function itemMax(it){
+  if(it.type==='note') return 0;
   const w = weights[it.id];
-  if(it.type==='segment') return Math.max(...it.options.map(o=>o.factor)) * w;
+  if(it.type==='segment') return Math.max(0, ...it.options.map(o=>o.factor)) * w;
   return w;
 }
 function totalMax(){ return CONFIG.reduce((s,it)=>s+itemMax(it),0); }
@@ -322,6 +414,14 @@ function displayVal(it){
   const v = state[it.id];
   if(it.type==='direct') return round1(v) + (it.unit?(' '+it.unit):'');
   if(it.type==='smooth') return v + (it.unit?(' '+it.unit):'');
+  return '';
+}
+function describeValue(it){
+  const v = state[it.id];
+  if(it.type==='segment') return L(getOptionLabel(it, v));
+  if(it.type==='smooth')  return v + (it.unit?(' '+it.unit):'');
+  if(it.type==='direct')  return round1(v) + ' / ' + round1(weights[it.id]);
+  if(it.type==='note')    return (v||'').trim();
   return '';
 }
 
@@ -348,7 +448,7 @@ function renderBody(){
     const valSpan = document.createElement('span');
     valSpan.className = 'item-val';
     valSpan.id = `val-${it.id}`;
-    if(it.type!=='segment') valSpan.textContent = displayVal(it);
+    if(it.type==='direct'||it.type==='smooth') valSpan.textContent = displayVal(it);
     head.appendChild(valSpan);
     card.appendChild(head);
 
@@ -357,7 +457,7 @@ function renderBody(){
       seg.className = 'seg';
       it.options.forEach((o,idx)=>{
         const b = document.createElement('button');
-        b.textContent = L(o.label);
+        b.textContent = L(getOptionLabel(it,idx));
         if(state[it.id]===idx) b.classList.add('on');
         b.onclick = ()=>{
           state[it.id]=idx;
@@ -368,6 +468,14 @@ function renderBody(){
         seg.appendChild(b);
       });
       card.appendChild(seg);
+    } else if(it.type==='note'){
+      const ta = document.createElement('textarea');
+      ta.className = 'note-input';
+      ta.placeholder = L(it.placeholder);
+      ta.value = state[it.id] || '';
+      ta.rows = 3;
+      ta.oninput = ()=>{ state[it.id] = ta.value; };
+      card.appendChild(ta);
     } else {
       const row = document.createElement('div');
       row.className = 'slider-row';
@@ -399,22 +507,22 @@ const scoreMaxEl = document.getElementById('scoreMax');
 const verdictEl  = document.getElementById('verdict');
 const progressEl = document.getElementById('progressFill');
 
+function score10(){ const t=total(), m=totalMax(); return m>0 ? clamp(t,0,m)/m*10 : 0; }
+function verdictOf(s){
+  if(s>=thresholds.good) return {cls:'v-good', label:L(UI.verdictGood)};
+  if(s>=thresholds.ok)   return {cls:'v-ok',   label:L(UI.verdictOk)};
+  if(s>=thresholds.mid)  return {cls:'v-mid',  label:L(UI.verdictMid)};
+  return {cls:'v-bad', label:L(UI.verdictBad)};
+}
 function updateTotal(){
-  const t = total(), m = totalMax();
-  const pct = m>0 ? clamp(t,0,m)/m*100 : 0;
-  const score10 = pct/10;               // 占满分百分比 ÷ 10 → 10 分制
-  scoreNumEl.textContent = score10.toFixed(1);
+  const s = score10();
+  scoreNumEl.textContent = s.toFixed(1);
   scoreMaxEl.textContent = '/ 10';
-  progressEl.style.width = pct + '%';
-
-  let cls,label;
-  if(score10>=thresholds.good){ cls='v-good'; label=L(UI.verdictGood); }
-  else if(score10>=thresholds.ok){ cls='v-ok'; label=L(UI.verdictOk); }
-  else if(score10>=thresholds.mid){ cls='v-mid'; label=L(UI.verdictMid); }
-  else { cls='v-bad'; label=L(UI.verdictBad); }
-  verdictEl.className = 'verdict ' + cls;
-  verdictEl.textContent = label;
-  const key = (cls==='v-good')?'--good':(cls==='v-ok')?'--ok':(cls==='v-mid')?'--mid':'--bad';
+  progressEl.style.width = (s*10) + '%';
+  const vd = verdictOf(s);
+  verdictEl.className = 'verdict ' + vd.cls;
+  verdictEl.textContent = vd.label;
+  const key = (vd.cls==='v-good')?'--good':(vd.cls==='v-ok')?'--ok':(vd.cls==='v-mid')?'--mid':'--bad';
   progressEl.style.background = getComputedStyle(document.documentElement).getPropertyValue(key).trim() || 'var(--ink)';
 }
 
@@ -432,25 +540,17 @@ const copyBtn = document.getElementById('copyBtn');
 const COPY_ICON = copyBtn.innerHTML;
 const CHECK_ICON = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
 
-function describeValue(it){
-  const v = state[it.id];
-  if(it.type==='segment') return L(it.options[v].label);
-  if(it.type==='smooth')  return v + (it.unit?(' '+it.unit):'');
-  if(it.type==='direct')  return round1(v) + ' / ' + round1(weights[it.id]);
-  return '';
-}
 function buildDescription(){
-  const t = total(), m = totalMax();
-  const score10 = m>0 ? clamp(t,0,m)/m*10 : 0;
-  let verdict;
-  if(score10>=thresholds.good) verdict=L(UI.verdictGood);
-  else if(score10>=thresholds.ok) verdict=L(UI.verdictOk);
-  else if(score10>=thresholds.mid) verdict=L(UI.verdictMid);
-  else verdict=L(UI.verdictBad);
-  const lines = [ L(UI.title)+' '+score10.toFixed(1)+'/10 · '+verdict, '' ];
+  const s = score10();
+  const lines = [ L(UI.title)+' '+s.toFixed(1)+'/10 · '+verdictOf(s).label, '' ];
   let lastGroup=null;
   CONFIG.forEach(it=>{
     if(it.group!==lastGroup){ lines.push('【'+L(GROUPS[it.group])+'】'); lastGroup=it.group; }
+    if(it.type==='note'){
+      const txt = describeValue(it);
+      if(txt) lines.push('· '+L(it.label)+'：'+txt);
+      return;
+    }
     lines.push('· '+L(it.label)+'：'+describeValue(it));
   });
   return lines.join('\n');
@@ -482,24 +582,24 @@ copyBtn.onclick = doCopy;
 /* ---------- 设置面板 ---------- */
 const overlay = document.getElementById('overlay');
 const weightList = document.getElementById('weightList');
+const rangeList = document.getElementById('rangeList');
 const threshList = document.getElementById('threshList');
 const weightSumEl = document.getElementById('weightSum');
-const threshNoteEl = document.getElementById('threshNote');
 
 function setMaxUI(){
   weightSumEl.textContent = round1(totalMax());
 }
 
-function makeStepper(getVal, onApply, isInt){
+function makeStepper(getVal, onApply, step){
+  step = step || 0.5;
   const stepper = document.createElement('div'); stepper.className='stepper';
   const minus = document.createElement('button'); minus.textContent='–';
   const inp = document.createElement('input'); inp.type='text'; inp.inputMode='decimal'; inp.value=round1(getVal());
   const plus = document.createElement('button'); plus.textContent='+';
-  const step = isInt?1:0.5;
   const commit = v=>{ onApply(v); inp.value=round1(getVal()); };
   minus.onclick=()=>commit(getVal()-step);
   plus.onclick =()=>commit(getVal()+step);
-  inp.onchange =()=>{ const n=parseFloat(inp.value); commit(isNaN(n)?0:n); };
+  inp.onchange =()=>{ const n=parseFloat(inp.value); commit(isNaN(n)?getVal():n); };
   stepper.appendChild(minus); stepper.appendChild(inp); stepper.appendChild(plus);
   return stepper;
 }
@@ -507,6 +607,7 @@ function makeStepper(getVal, onApply, isInt){
 function renderWeights(){
   weightList.innerHTML = '';
   CONFIG.forEach(it=>{
+    if(it.weight==null) return;
     const row = document.createElement('div'); row.className='wrow';
     const wn = document.createElement('div'); wn.className='wn';
     wn.innerHTML = `<span></span><small></small>`;
@@ -515,11 +616,39 @@ function renderWeights(){
     row.appendChild(wn);
     const stepper = makeStepper(
       ()=>weights[it.id],
-      v=>{ weights[it.id]=Math.max(0, Math.round(v*2)/2); persistWeights(); setMaxUI(); updateTotal(); },
-      false
+      v=>{ weights[it.id]=Math.max(0, Math.round(v*2)/2); if(it.type==='direct') state[it.id]=Math.min(state[it.id], weights[it.id]); persistWeights(); setMaxUI(); updateTotal(); },
+      0.5
     );
     row.appendChild(stepper);
     weightList.appendChild(row);
+  });
+}
+
+function rangeRow(labelText, getVal, onApply, step, unit){
+  const row = document.createElement('div'); row.className='wrow';
+  const wn = document.createElement('div'); wn.className='wn'; wn.textContent=labelText;
+  row.appendChild(wn);
+  const side = document.createElement('div'); side.className='thr-side';
+  side.appendChild(makeStepper(getVal, onApply, step));
+  if(unit){ const u=document.createElement('span'); u.className='thr-ge'; u.textContent=unit; side.appendChild(u); }
+  row.appendChild(side);
+  return row;
+}
+function renderRanges(){
+  rangeList.innerHTML='';
+  const a=byId('area'), r=byId('rent');
+  const apply = ()=>{ normalizeParams(); persistParams(); renderRanges(); renderBody(); updateTotal(); };
+  rangeList.appendChild(rangeRow(L(UI.rangeAreaLow),  ()=>params.area.low,  v=>{ params.area.low=v;  apply(); }, a.step, a.unit));
+  rangeList.appendChild(rangeRow(L(UI.rangeAreaHigh), ()=>params.area.high, v=>{ params.area.high=v; apply(); }, a.step, a.unit));
+  rangeList.appendChild(rangeRow(L(UI.rangeRentLow),  ()=>params.rent.low,  v=>{ params.rent.low=v;  apply(); }, r.step, r.unit));
+  rangeList.appendChild(rangeRow(L(UI.rangeRentHigh), ()=>params.rent.high, v=>{ params.rent.high=v; apply(); }, r.step, r.unit));
+  [0,1,2].forEach(i=>{
+    rangeList.appendChild(rangeRow(
+      L(UI.rangeCommutePre)+(i+1)+L(UI.rangeCommuteSuf),
+      ()=>params.commute.times[i],
+      v=>{ params.commute.times[i]=v; apply(); },
+      1, '分'
+    ));
   });
 }
 
@@ -545,7 +674,7 @@ function renderThresholds(){
         else thresholds.mid = clamp(v, 0, thresholds.ok);
         persistThresholds(); updateTotal();
       },
-      false
+      0.5
     );
     side.appendChild(ge); side.appendChild(stepper);
     row.appendChild(side);
@@ -553,7 +682,7 @@ function renderThresholds(){
   });
 }
 
-function renderSettings(){ renderWeights(); renderThresholds(); setMaxUI(); }
+function renderSettings(){ renderWeights(); renderRanges(); renderThresholds(); setMaxUI(); }
 
 document.getElementById('settingsBtn').onclick = ()=>{ renderSettings(); overlay.classList.add('show'); };
 function closeSheet(){ overlay.classList.remove('show'); renderBody(); updateTotal(); }
@@ -563,7 +692,8 @@ document.getElementById('resetAllBtn').onclick = ()=>{
   if(confirm(L(UI.confirmResetAll))){
     weights = defaultWeights(); persistWeights();
     thresholds = {...DEFAULT_THRESHOLDS}; persistThresholds();
-    renderSettings(); updateTotal();
+    params = defaultParams(); persistParams();
+    renderSettings(); renderBody(); updateTotal();
   }
 };
 
@@ -581,8 +711,10 @@ function applyLang(){
   document.getElementById('sheetSub').textContent = L(UI.sheetSub);
   document.getElementById('doneBtn').textContent = L(UI.done);
   document.getElementById('secWeightsLabel').textContent = L(UI.secWeights);
+  document.getElementById('secRangesLabel').textContent = L(UI.secRanges);
+  document.getElementById('rangeNote').textContent = L(UI.rangeNote);
   document.getElementById('secThreshLabel').textContent = L(UI.secThresh);
-  threshNoteEl.textContent = L(UI.threshNote);
+  document.getElementById('threshNote').textContent = L(UI.threshNote);
   document.getElementById('wsPre').textContent = L(UI.wsPre);
   document.getElementById('wsSuf').textContent = L(UI.wsSuf);
   document.getElementById('resetAllBtn').textContent = L(UI.resetAll);
