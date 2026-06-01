@@ -231,7 +231,7 @@ const CONFIG = [
 ];
 
 // 评判阈值默认值（绝对分数）。强烈推荐 ≥ good，值得考虑 ≥ ok，一般 ≥ mid，低于 mid 为不推荐
-const DEFAULT_THRESHOLDS = { good:24, ok:18, mid:12 };
+const DEFAULT_THRESHOLDS = { good:7.0, ok:5.5, mid:3.5 }; // 10 分制（强烈推荐 / 值得考虑 / 一般）
 
 const UI = {
   title:        {zh:'房源评分', ja:'物件スコア'},
@@ -246,7 +246,7 @@ const UI = {
   done:         {zh:'完成', ja:'完了'},
   secWeights:   {zh:'权重（每项满分）', ja:'重み（各項目の満点）'},
   secThresh:    {zh:'评判阈值', ja:'判定しきい値'},
-  threshNote:   {zh:'分数达到该线即归入对应评价 · 满分 ', ja:'スコアがこの値以上で各評価に · 満点 '},
+  threshNote:   {zh:'10 分制 · 分数达到该线即归入对应评价', ja:'10点満点 · スコアがこの値以上で各評価に'},
   wsPre:        {zh:'当前满分合计', ja:'現在の満点合計'},
   wsSuf:        {zh:'分', ja:'点'},
   resetAll:     {zh:'恢复默认设置', ja:'設定を初期化'},
@@ -257,7 +257,7 @@ const UI = {
 /* ===================== 逻辑 / ロジック ===================== */
 
 const LS_WEIGHTS = 'houseScoreWeights_v1';
-const LS_THRESH  = 'houseScoreThresholds_v1';
+const LS_THRESH  = 'houseScoreThresholds_v2';
 const LS_LANG    = 'houseScoreLang_v1';
 
 const round1 = n => Math.round(n*10)/10;
@@ -283,11 +283,12 @@ try{
   const s = JSON.parse(localStorage.getItem(LS_THRESH) || '{}');
   ['good','ok','mid'].forEach(k=>{ if(typeof s[k]==='number') thresholds[k]=s[k]; });
 }catch(e){}
-// 保证 good ≥ ok ≥ mid ≥ 0
+// 保证 good ≥ ok ≥ mid，且均在 0–10（10 分制）
 function normalizeThresholds(){
-  thresholds.mid = Math.max(0, Math.round(thresholds.mid));
-  thresholds.ok  = Math.max(thresholds.mid, Math.round(thresholds.ok));
-  thresholds.good= Math.max(thresholds.ok, Math.round(thresholds.good));
+  const r=v=>clamp(Math.round(v*2)/2,0,10);
+  thresholds.mid = r(thresholds.mid);
+  thresholds.ok  = Math.max(thresholds.mid, r(thresholds.ok));
+  thresholds.good= Math.max(thresholds.ok, r(thresholds.good));
 }
 normalizeThresholds();
 function persistThresholds(){ try{ localStorage.setItem(LS_THRESH, JSON.stringify(thresholds)); }catch(e){} }
@@ -399,14 +400,15 @@ const progressEl = document.getElementById('progressFill');
 function updateTotal(){
   const t = total(), m = totalMax();
   const pct = m>0 ? clamp(t,0,m)/m*100 : 0;
-  scoreNumEl.textContent = round1(t);
-  scoreMaxEl.textContent = '/ ' + round1(m);
+  const score10 = pct/10;               // 占满分百分比 ÷ 10 → 10 分制
+  scoreNumEl.textContent = score10.toFixed(1);
+  scoreMaxEl.textContent = '/ 10';
   progressEl.style.width = pct + '%';
 
   let cls,label;
-  if(t>=thresholds.good){ cls='v-good'; label=L(UI.verdictGood); }
-  else if(t>=thresholds.ok){ cls='v-ok'; label=L(UI.verdictOk); }
-  else if(t>=thresholds.mid){ cls='v-mid'; label=L(UI.verdictMid); }
+  if(score10>=thresholds.good){ cls='v-good'; label=L(UI.verdictGood); }
+  else if(score10>=thresholds.ok){ cls='v-ok'; label=L(UI.verdictOk); }
+  else if(score10>=thresholds.mid){ cls='v-mid'; label=L(UI.verdictMid); }
   else { cls='v-bad'; label=L(UI.verdictBad); }
   verdictEl.className = 'verdict ' + cls;
   verdictEl.textContent = label;
@@ -432,7 +434,6 @@ const threshNoteEl = document.getElementById('threshNote');
 
 function setMaxUI(){
   weightSumEl.textContent = round1(totalMax());
-  threshNoteEl.textContent = L(UI.threshNote) + round1(totalMax());
 }
 
 function makeStepper(getVal, onApply, isInt){
@@ -484,13 +485,13 @@ function renderThresholds(){
     const stepper = makeStepper(
       ()=>thresholds[d.key],
       v=>{
-        v = Math.max(0, Math.round(v));
-        if(d.key==='good') thresholds.good = Math.max(v, thresholds.ok);
+        v = clamp(Math.round(v*2)/2, 0, 10);
+        if(d.key==='good') thresholds.good = clamp(Math.max(v, thresholds.ok), 0, 10);
         else if(d.key==='ok') thresholds.ok = clamp(v, thresholds.mid, thresholds.good);
         else thresholds.mid = clamp(v, 0, thresholds.ok);
         persistThresholds(); updateTotal();
       },
-      true
+      false
     );
     side.appendChild(ge); side.appendChild(stepper);
     row.appendChild(side);
@@ -526,6 +527,7 @@ function applyLang(){
   document.getElementById('doneBtn').textContent = L(UI.done);
   document.getElementById('secWeightsLabel').textContent = L(UI.secWeights);
   document.getElementById('secThreshLabel').textContent = L(UI.secThresh);
+  threshNoteEl.textContent = L(UI.threshNote);
   document.getElementById('wsPre').textContent = L(UI.wsPre);
   document.getElementById('wsSuf').textContent = L(UI.wsSuf);
   document.getElementById('resetAllBtn').textContent = L(UI.resetAll);
