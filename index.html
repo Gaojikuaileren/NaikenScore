@@ -37,7 +37,7 @@
     }
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-  html,body{margin:0;padding:0;}
+  html,body{margin:0;padding:0;touch-action:manipulation;}
   body{
     background:var(--paper); color:var(--ink); font-family:var(--font-ui);
     font-size:16px; line-height:1.5; -webkit-font-smoothing:antialiased;
@@ -128,6 +128,7 @@
           <button id="langZh">中</button>
           <button id="langJa">日</button>
         </div>
+        <button class="icon-btn" id="copyBtn" aria-label="copy"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M5 15V5a2 2 0 0 1 2-2h10"></path></svg></button>
         <button class="icon-btn" id="resetBtn" aria-label="reset">&#8635;</button>
         <button class="icon-btn" id="settingsBtn" aria-label="settings">&#9881;</button>
       </div>
@@ -241,6 +242,7 @@ const UI = {
   verdictBad:   {zh:'不推荐', ja:'おすすめしない'},
   settingsTitle:{zh:'设置', ja:'設定'},
   resetTip:     {zh:'重置本次输入', ja:'今回の入力をリセット'},
+  copyTip:      {zh:'复制评估', ja:'評価をコピー'},
   settingsTip:  {zh:'设置', ja:'設定'},
   sheetSub:     {zh:'修改后自动保存', ja:'変更は自動保存'},
   done:         {zh:'完成', ja:'完了'},
@@ -425,6 +427,58 @@ document.getElementById('resetBtn').onclick = ()=>{
   }
 };
 
+/* ---------- 复制评估描述 / 評価をコピー ---------- */
+const copyBtn = document.getElementById('copyBtn');
+const COPY_ICON = copyBtn.innerHTML;
+const CHECK_ICON = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+
+function describeValue(it){
+  const v = state[it.id];
+  if(it.type==='segment') return L(it.options[v].label);
+  if(it.type==='smooth')  return v + (it.unit?(' '+it.unit):'');
+  if(it.type==='direct')  return round1(v) + ' / ' + round1(weights[it.id]);
+  return '';
+}
+function buildDescription(){
+  const t = total(), m = totalMax();
+  const score10 = m>0 ? clamp(t,0,m)/m*10 : 0;
+  let verdict;
+  if(score10>=thresholds.good) verdict=L(UI.verdictGood);
+  else if(score10>=thresholds.ok) verdict=L(UI.verdictOk);
+  else if(score10>=thresholds.mid) verdict=L(UI.verdictMid);
+  else verdict=L(UI.verdictBad);
+  const lines = [ L(UI.title)+' '+score10.toFixed(1)+'/10 · '+verdict, '' ];
+  let lastGroup=null;
+  CONFIG.forEach(it=>{
+    if(it.group!==lastGroup){ lines.push('【'+L(GROUPS[it.group])+'】'); lastGroup=it.group; }
+    lines.push('· '+L(it.label)+'：'+describeValue(it));
+  });
+  return lines.join('\n');
+}
+function flashCopied(){
+  copyBtn.innerHTML = CHECK_ICON;
+  setTimeout(()=>{ copyBtn.innerHTML = COPY_ICON; }, 1200);
+}
+async function doCopy(){
+  const text = buildDescription();
+  try{
+    if(navigator.clipboard && navigator.clipboard.writeText){ await navigator.clipboard.writeText(text); }
+    else { throw 0; }
+    flashCopied();
+  }catch(e){
+    try{
+      const ta=document.createElement('textarea');
+      ta.value=text; ta.style.position='fixed'; ta.style.top='0'; ta.style.opacity='0';
+      document.body.appendChild(ta); ta.focus(); ta.select();
+      ta.setSelectionRange(0, text.length);
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      flashCopied();
+    }catch(e2){ alert(text); }
+  }
+}
+copyBtn.onclick = doCopy;
+
 /* ---------- 设置面板 ---------- */
 const overlay = document.getElementById('overlay');
 const weightList = document.getElementById('weightList');
@@ -521,6 +575,7 @@ function applyLang(){
   document.title = L(UI.title);
   document.getElementById('title').textContent = L(UI.title);
   document.getElementById('resetBtn').title = L(UI.resetTip);
+  document.getElementById('copyBtn').title = L(UI.copyTip);
   document.getElementById('settingsBtn').title = L(UI.settingsTip);
   document.getElementById('sheetTitle').textContent = L(UI.settingsTitle);
   document.getElementById('sheetSub').textContent = L(UI.sheetSub);
