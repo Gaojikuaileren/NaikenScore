@@ -48,13 +48,13 @@
   /* ---------- sticky header ---------- */
   header{position:sticky; top:0; z-index:20; background:var(--paper); padding:calc(env(safe-area-inset-top) + 14px) 16px 12px; border-bottom:1px solid var(--line);}
   .bar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;}
-  .bar h1{font-family:var(--font-num);font-weight:500;font-size:19px;letter-spacing:.2px;margin:0;white-space:nowrap;}
-  .tools{display:flex;gap:7px;align-items:center;}
+  .bar h1{font-family:var(--font-num);font-weight:500;font-size:19px;letter-spacing:.2px;margin:0;white-space:nowrap;min-width:0;overflow:hidden;text-overflow:ellipsis;}
+  .tools{display:flex;gap:6px;align-items:center;flex-shrink:0;}
   .lang-seg{display:flex;border:1px solid var(--line-strong);border-radius:11px;overflow:hidden;}
-  .lang-seg button{width:34px;height:38px;border:none;background:var(--card);color:var(--ink-soft);font-family:var(--font-ui);font-size:14px;font-weight:600;cursor:pointer;transition:background .12s,color .12s;}
+  .lang-seg button{width:30px;height:36px;border:none;background:var(--card);color:var(--ink-soft);font-family:var(--font-ui);font-size:13.5px;font-weight:600;cursor:pointer;transition:background .12s,color .12s;}
   .lang-seg button + button{border-left:1px solid var(--line);}
   .lang-seg button.on{background:var(--sel-bg);color:var(--sel-text);}
-  .icon-btn{width:38px;height:38px;border-radius:11px;border:1px solid var(--line-strong);background:var(--card);color:var(--ink);font-size:17px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform .12s,background .12s;}
+  .icon-btn{width:36px;height:36px;border-radius:11px;border:1px solid var(--line-strong);background:var(--card);color:var(--ink);font-size:17px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform .12s,background .12s;}
   .icon-btn:active{transform:scale(.92);background:var(--chip);}
   .score-line{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;}
   .score-main{display:flex;align-items:baseline;gap:6px;}
@@ -162,6 +162,8 @@
         <div class="lang-seg">
           <button id="langZh">中</button>
           <button id="langJa">日</button>
+          <button id="langEn">EN</button>
+          <button id="langDe">DE</button>
         </div>
         <button class="icon-btn" id="copyBtn" aria-label="copy"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M5 15V5a2 2 0 0 1 2-2h10"></path></svg></button>
         <button class="icon-btn" id="resetBtn" aria-label="reset">&#8635;</button>
@@ -256,20 +258,20 @@ const DIRECT_STEP = 0.5;
 
 // 重要度等级（同一等级 = 同一乘积，体现比重）
 const IMPORTANCE = [
-  {v:1, label:{zh:'可有可无', ja:'不問'}},
-  {v:2, label:{zh:'一般',     ja:'普通'}},
-  {v:4, label:{zh:'有点重要', ja:'やや重要'}},
-  {v:6, label:{zh:'重要',     ja:'重要'}},
-  {v:9, label:{zh:'非常重要', ja:'最重要'}},
+  {v:1, label:{zh:'可有可无', ja:'不問',     en:'Optional', de:'Egal'}},
+  {v:2, label:{zh:'一般',     ja:'普通',     en:'Low',      de:'Gering'}},
+  {v:4, label:{zh:'有点重要', ja:'やや重要', en:'Medium',   de:'Mittel'}},
+  {v:6, label:{zh:'重要',     ja:'重要',     en:'Important', de:'Wichtig'}},
+  {v:9, label:{zh:'非常重要', ja:'最重要',   en:'Critical', de:'Sehr wichtig'}},
 ];
 
 const GROUPS = {
-  core:    {zh:'核心指标',    ja:'コア項目'},
-  comfort: {zh:'生活舒适度',  ja:'暮らしの快適さ'},
-  space:   {zh:'空间与工作',  ja:'空間と仕事'},
-  cost:    {zh:'经济与条件',  ja:'費用と条件'},
-  custom:  {zh:'自定义',      ja:'カスタム'},
-  subj:    {zh:'主观',        ja:'主観'},
+  core:    {zh:'核心指标',    ja:'コア項目',        en:'Core',         de:'Kernkriterien'},
+  comfort: {zh:'生活舒适度',  ja:'暮らしの快適さ',  en:'Comfort',      de:'Wohnkomfort'},
+  space:   {zh:'空间与工作',  ja:'空間と仕事',      en:'Space & Work', de:'Raum & Arbeit'},
+  cost:    {zh:'经济与条件',  ja:'費用と条件',      en:'Cost & Terms', de:'Kosten & Konditionen'},
+  custom:  {zh:'自定义',      ja:'カスタム',        en:'Custom',       de:'Eigene'},
+  subj:    {zh:'主观',        ja:'主観',            en:'Subjective',   de:'Subjektiv'},
 };
 const GROUP_ORDER = ['core','comfort','space','cost','custom','subj'];
 
@@ -278,121 +280,122 @@ const CURRENCIES = [
   {id:'EUR', sym:'€'},
   {id:'USD', sym:'$'},
   {id:'CNY', sym:'¥'},
-  {id:'JPY', sym:'円'},
 ];
 
 const BASE_CONFIG = [
   // —— 核心指标（置顶）——
-  { id:'area', label:{zh:'面积',ja:'広さ'}, icon:'⬚', group:'core', type:'smooth', weight:9,
-    min:30, max:120, lowBound:50, highBound:80, step:1, unit:'㎡', default:50 },
-  { id:'rent', label:{zh:'月租金',ja:'月額家賃'}, icon:'◈', group:'core', type:'smooth', weight:9,
-    min:400, max:1600, lowBound:600, highBound:1100, inverted:true, step:10, currency:true, default:1000 },
-  { id:'commute', label:{zh:'通勤时间',ja:'通勤時間'}, icon:'➤', group:'core', type:'segment', weight:6, default:3,
-    times:[10,13,15],
+  { id:'area', label:{zh:'面积',ja:'広さ',en:'Area',de:'Fläche'}, icon:'⬚', group:'core', type:'smooth', weight:6,
+    min:30, max:120, lowBound:40, highBound:90, step:1, unit:'㎡', default:50 },
+  { id:'rent', label:{zh:'月租金',ja:'月額家賃',en:'Rent',de:'Miete'}, icon:'◈', group:'core', type:'smooth', weight:6,
+    min:400, max:1600, lowBound:500, highBound:1200, inverted:true, step:10, currency:true, default:1000 },
+  { id:'commute', label:{zh:'通勤时间',ja:'通勤時間',en:'Commute',de:'Arbeitsweg'}, icon:'➤', group:'core', type:'segment', weight:9, default:3,
+    times:[10,15,20],
     options:[{factor:1},{factor:0.667},{factor:0.333},{factor:0}],
     optionLabel:(idx,times)=>{ const last=times[times.length-1];
-      return idx<times.length ? {zh:'≤'+times[idx]+'分',ja:times[idx]+'分以内'} : {zh:'>'+last+'分',ja:last+'分超'}; } },
-  { id:'env', label:{zh:'环境',ja:'環境'}, icon:'❡', group:'core', type:'direct', weight:6, default:0,
-    hint:{zh:'0 差 — 5 好', ja:'0 悪い — 5 良い'} },
+      return idx<times.length
+        ? {zh:'≤'+times[idx]+'分',ja:times[idx]+'分以内',en:'≤'+times[idx]+' min',de:'≤'+times[idx]+' Min.'}
+        : {zh:'>'+last+'分',ja:last+'分超',en:'>'+last+' min',de:'>'+last+' Min.'}; } },
+  { id:'env', label:{zh:'环境',ja:'環境',en:'Surroundings',de:'Umgebung'}, icon:'❡', group:'core', type:'direct', weight:6, default:0,
+    hint:{zh:'0 差 — 5 好', ja:'0 悪い — 5 良い', en:'0 poor — 5 great', de:'0 schlecht — 5 top'} },
 
   // —— 生活舒适度 ——
-  { id:'sunlight', label:{zh:'阳光光照',ja:'日当たり'}, icon:'☀', group:'comfort', type:'direct', weight:4, default:0,
-    hint:{zh:'0 阴暗 — 5 充足', ja:'0 暗い — 5 明るい'} },
-  { id:'balcony', label:{zh:'阳台',ja:'バルコニー'}, icon:'❏', group:'comfort', type:'segment', weight:2, default:0,
-    options:[{label:{zh:'无阳台',ja:'なし'},factor:0},{label:{zh:'小阳台',ja:'小さい'},factor:0.5},{label:{zh:'好阳台',ja:'広い'},factor:1}] },
-  { id:'bathtub', label:{zh:'浴缸',ja:'バスタブ'}, icon:'◗', group:'comfort', type:'segment', weight:1, default:0,
-    options:[{label:{zh:'无',ja:'なし'},factor:0},{label:{zh:'有',ja:'あり'},factor:1}] },
-  { id:'kitchen', label:{zh:'厨房',ja:'キッチン'}, icon:'▤', group:'comfort', type:'segment', weight:4, default:0,
-    options:[{label:{zh:'无',ja:'なし'},factor:0},{label:{zh:'简易',ja:'簡易'},factor:0.5},{label:{zh:'完整',ja:'充実'},factor:1}] },
-  { id:'hood', label:{zh:'抽油烟机',ja:'レンジフード'}, icon:'♨', group:'comfort', type:'segment', weight:2, default:0,
-    options:[{label:{zh:'可安装',ja:'設置可'},factor:1},{label:{zh:'无法安装',ja:'設置不可'},factor:0}] },
-  { id:'tiles', label:{zh:'墙壁 / 瓷砖',ja:'壁 / タイル'}, icon:'▩', group:'comfort', type:'segment', weight:2, default:0,
-    options:[{label:{zh:'正常',ja:'普通'},factor:1},{label:{zh:'怪异',ja:'変'},factor:0}] },
-  { id:'guest_wc', label:{zh:'客人洗手间',ja:'来客用トイレ'}, icon:'◔', group:'comfort', type:'segment', weight:1, default:0,
-    options:[{label:{zh:'无',ja:'なし'},factor:0},{label:{zh:'有',ja:'あり'},factor:1}] },
+  { id:'sunlight', label:{zh:'阳光光照',ja:'日当たり',en:'Sunlight',de:'Sonnenlicht'}, icon:'☀', group:'comfort', type:'direct', weight:2, default:0,
+    hint:{zh:'0 阴暗 — 5 充足', ja:'0 暗い — 5 明るい', en:'0 dark — 5 bright', de:'0 dunkel — 5 hell'} },
+  { id:'balcony', label:{zh:'阳台',ja:'バルコニー',en:'Balcony',de:'Balkon'}, icon:'❏', group:'comfort', type:'segment', weight:4, default:0,
+    options:[{label:{zh:'无阳台',ja:'なし',en:'None',de:'Kein'},factor:0},{label:{zh:'小阳台',ja:'小さい',en:'Small',de:'Klein'},factor:0.5},{label:{zh:'好阳台',ja:'広い',en:'Good',de:'Gut'},factor:1}] },
+  { id:'bathtub', label:{zh:'浴缸',ja:'バスタブ',en:'Bathtub',de:'Badewanne'}, icon:'◗', group:'comfort', type:'segment', weight:2, default:0,
+    options:[{label:{zh:'无',ja:'なし',en:'No',de:'Nein'},factor:0},{label:{zh:'有',ja:'あり',en:'Yes',de:'Ja'},factor:1}] },
+  { id:'kitchen', label:{zh:'厨房',ja:'キッチン',en:'Kitchen',de:'Küche'}, icon:'▤', group:'comfort', type:'segment', weight:4, default:0,
+    options:[{label:{zh:'无',ja:'なし',en:'None',de:'Keine'},factor:0},{label:{zh:'简易',ja:'簡易',en:'Basic',de:'Einfach'},factor:0.5},{label:{zh:'完整',ja:'充実',en:'Full',de:'Komplett'},factor:1}] },
+  { id:'hood', label:{zh:'抽油烟机',ja:'レンジフード',en:'Range hood',de:'Dunstabzug'}, icon:'♨', group:'comfort', type:'segment', weight:2, default:0,
+    options:[{label:{zh:'可安装',ja:'設置可',en:'Possible',de:'Möglich'},factor:1},{label:{zh:'无法安装',ja:'設置不可',en:'Not possible',de:'Unmöglich'},factor:0}] },
+  { id:'tiles', label:{zh:'墙壁 / 瓷砖',ja:'壁 / タイル',en:'Walls / tiles',de:'Wände / Fliesen'}, icon:'▩', group:'comfort', type:'segment', weight:2, default:0,
+    options:[{label:{zh:'正常',ja:'普通',en:'Normal',de:'Normal'},factor:1},{label:{zh:'怪异',ja:'変',en:'Odd',de:'Seltsam'},factor:0}] },
+  { id:'guest_wc', label:{zh:'客人洗手间',ja:'来客用トイレ',en:'Guest WC',de:'Gäste-WC'}, icon:'◔', group:'comfort', type:'segment', weight:1, default:0,
+    options:[{label:{zh:'无',ja:'なし',en:'No',de:'Nein'},factor:0},{label:{zh:'有',ja:'あり',en:'Yes',de:'Ja'},factor:1}] },
 
   // —— 空间与工作 ——
-  { id:'workspace', label:{zh:'工作空间',ja:'ワークスペース'}, icon:'▦', group:'space', type:'direct', weight:6, default:0,
-    hint:{zh:'0 无 · 中段 卧室/客厅办公 · 5 独立书房', ja:'0 なし · 中間 寝室/リビング作業 · 5 書斎'} },
-  { id:'openness', label:{zh:'空间开放感',ja:'開放感'}, icon:'⤢', group:'space', type:'direct', weight:2, default:0,
-    hint:{zh:'0 压抑 — 5 开阔', ja:'0 圧迫 — 5 開放的'} },
-  { id:'floor', label:{zh:'楼层',ja:'階数'}, icon:'⌂', group:'space', type:'segment', weight:2, default:1,
-    options:[{label:{zh:'0–1楼',ja:'0〜1階'},factor:1},{label:{zh:'其他',ja:'その他'},factor:0.5},{label:{zh:'顶楼',ja:'最上階'},factor:0}] },
-  { id:'storage', label:{zh:'储物空间',ja:'収納スペース'}, icon:'☰', group:'space', type:'segment', weight:2, default:0,
-    options:[{label:{zh:'无',ja:'なし'},factor:0},{label:{zh:'有',ja:'あり'},factor:1}] },
-  { id:'basement', label:{zh:'地下室',ja:'地下室'}, icon:'⬓', group:'space', type:'segment', weight:1, default:0,
-    options:[{label:{zh:'无',ja:'なし'},factor:0},{label:{zh:'有',ja:'あり'},factor:1}] },
-  { id:'fridge', label:{zh:'大冰箱',ja:'大型冷蔵庫'}, icon:'❄', group:'space', type:'segment', weight:4, default:0,
-    options:[{label:{zh:'放得下',ja:'置ける'},factor:1},{label:{zh:'放不下',ja:'置けない'},factor:0}] },
+  { id:'workspace', label:{zh:'工作空间',ja:'ワークスペース',en:'Workspace',de:'Arbeitsplatz'}, icon:'▦', group:'space', type:'direct', weight:8, default:0,
+    hint:{zh:'0 无 · 中段 卧室/客厅办公 · 5 独立书房', ja:'0 なし · 中間 寝室/リビング作業 · 5 書斎', en:'0 none · mid desk in room · 5 own study', de:'0 keiner · Mitte im Zimmer · 5 eigenes Büro'} },
+  { id:'openness', label:{zh:'空间开放感',ja:'開放感',en:'Openness',de:'Offenheit'}, icon:'⤢', group:'space', type:'direct', weight:4, default:0,
+    hint:{zh:'0 压抑 — 5 开阔', ja:'0 圧迫 — 5 開放的', en:'0 cramped — 5 open', de:'0 eng — 5 offen'} },
+  { id:'floor', label:{zh:'楼层',ja:'階数',en:'Floor',de:'Etage'}, icon:'⌂', group:'space', type:'segment', weight:4, default:1,
+    options:[{label:{zh:'0–1楼',ja:'0〜1階',en:'0–1F',de:'EG–1'},factor:1},{label:{zh:'其他',ja:'その他',en:'Other',de:'Andere'},factor:0.5},{label:{zh:'顶楼',ja:'最上階',en:'Top',de:'Dach'},factor:0}] },
+  { id:'storage', label:{zh:'储物空间',ja:'収納スペース',en:'Storage',de:'Stauraum'}, icon:'☰', group:'space', type:'segment', weight:1, default:0,
+    options:[{label:{zh:'无',ja:'なし',en:'No',de:'Nein'},factor:0},{label:{zh:'有',ja:'あり',en:'Yes',de:'Ja'},factor:1}] },
+  { id:'basement', label:{zh:'地下室',ja:'地下室',en:'Basement',de:'Keller'}, icon:'⬓', group:'space', type:'segment', weight:1, default:0,
+    options:[{label:{zh:'无',ja:'なし',en:'No',de:'Nein'},factor:0},{label:{zh:'有',ja:'あり',en:'Yes',de:'Ja'},factor:1}] },
+  { id:'fridge', label:{zh:'大冰箱',ja:'大型冷蔵庫',en:'Big fridge',de:'Großer Kühlschrank'}, icon:'❄', group:'space', type:'segment', weight:4, default:0,
+    options:[{label:{zh:'放得下',ja:'置ける',en:'Fits',de:'Passt'},factor:1},{label:{zh:'放不下',ja:'置けない',en:'No fit',de:'Passt nicht'},factor:0}] },
 
   // —— 经济与条件 ——
-  { id:'nach', label:{zh:'Nach 费用',ja:'Nach 費用'}, icon:'◇', group:'cost', type:'smooth', weight:2,
-    min:0, max:3000, lowBound:0, highBound:1500, inverted:true, step:50, currency:true, default:0,
-    hint:{zh:'额外/一次性费用 · 越低越好', ja:'追加・初期費用 · 低いほど良い'} },
-  { id:'reno', label:{zh:'装修状况',ja:'内装の状態'}, icon:'✎', group:'cost', type:'direct', weight:4, default:0,
-    hint:{zh:'0 旧 — 5 新', ja:'0 古い — 5 新しい'} },
-  { id:'parking', label:{zh:'停车场',ja:'駐車場'}, icon:'⊟', group:'cost', type:'segment', weight:1, default:0,
-    options:[{label:{zh:'无',ja:'なし'},factor:0},{label:{zh:'有',ja:'あり'},factor:1}] },
-  { id:'pet', label:{zh:'宠物政策',ja:'ペット可否'}, icon:'❖', group:'cost', type:'segment', weight:4, default:1,
-    options:[{label:{zh:'明确禁止',ja:'不可'},factor:0},{label:{zh:'没说',ja:'記載なし'},factor:0.5},{label:{zh:'明确允许',ja:'可'},factor:1}] },
-  { id:'landlord', label:{zh:'房东 / 机构',ja:'大家 / 管理会社'}, icon:'☻', group:'cost', type:'segment', weight:2, default:2,
-    options:[{label:{zh:'很差',ja:'悪い'},factor:0},{label:{zh:'一般',ja:'ふつう'},factor:0.33},{label:{zh:'未知',ja:'不明'},factor:0.67},{label:{zh:'好人',ja:'良い'},factor:1}] },
+  { id:'nach', label:{zh:'Nach 费用',ja:'Nach 費用',en:'Nach cost',de:'Nach-Kosten'}, icon:'◇', group:'cost', type:'smooth', weight:3,
+    min:0, max:3000, lowBound:500, highBound:3000, inverted:true, step:50, currency:true, default:0,
+    hint:{zh:'额外/一次性费用 · 越低越好', ja:'追加・初期費用 · 低いほど良い', en:'Extra / one-off cost · lower is better', de:'Zusatz-/Einmalkosten · niedriger ist besser'} },
+  { id:'reno', label:{zh:'装修状况',ja:'内装の状態',en:'Condition',de:'Zustand'}, icon:'✎', group:'cost', type:'direct', weight:4, default:0,
+    hint:{zh:'0 旧 — 5 新', ja:'0 古い — 5 新しい', en:'0 old — 5 new', de:'0 alt — 5 neu'} },
+  { id:'parking', label:{zh:'停车场',ja:'駐車場',en:'Parking',de:'Parkplatz'}, icon:'⊟', group:'cost', type:'segment', weight:1, default:0,
+    options:[{label:{zh:'无',ja:'なし',en:'No',de:'Nein'},factor:0},{label:{zh:'有',ja:'あり',en:'Yes',de:'Ja'},factor:1}] },
+  { id:'pet', label:{zh:'宠物政策',ja:'ペット可否',en:'Pets',de:'Haustiere'}, icon:'❖', group:'cost', type:'segment', weight:2, default:1,
+    options:[{label:{zh:'明确禁止',ja:'不可',en:'Banned',de:'Verboten'},factor:0},{label:{zh:'没说',ja:'記載なし',en:'Unstated',de:'Keine Angabe'},factor:0.5},{label:{zh:'明确允许',ja:'可',en:'Allowed',de:'Erlaubt'},factor:1}] },
+  { id:'landlord', label:{zh:'房东 / 机构',ja:'大家 / 管理会社',en:'Landlord',de:'Vermieter'}, icon:'☻', group:'cost', type:'segment', weight:2, default:2,
+    options:[{label:{zh:'很差',ja:'悪い',en:'Bad',de:'Schlecht'},factor:0},{label:{zh:'一般',ja:'ふつう',en:'Average',de:'Mittel'},factor:0.33},{label:{zh:'未知',ja:'不明',en:'Unknown',de:'Unbekannt'},factor:0.67},{label:{zh:'好人',ja:'良い',en:'Good',de:'Gut'},factor:1}] },
 
   // —— 主观 ——
-  { id:'subjective', label:{zh:'主观感受',ja:'直感評価'}, icon:'♥', group:'subj', type:'direct', weight:9, default:0,
-    hint:{zh:'凭直觉打分 · 0 无感 — 5 一见钟情', ja:'直感で · 0 無感 — 5 ひとめ惚れ'} },
-  { id:'note', label:{zh:'特殊备注',ja:'特記事項'}, icon:'✐', group:'subj', type:'note', default:'',
-    placeholder:{zh:'其他想记的，会一并复制…', ja:'その他のメモ、コピーに含まれます…'} },
+  { id:'subjective', label:{zh:'主观感受',ja:'直感評価',en:'Gut feeling',de:'Bauchgefühl'}, icon:'♥', group:'subj', type:'direct', weight:10, default:0,
+    hint:{zh:'凭直觉打分 · 0 无感 — 5 一见钟情', ja:'直感で · 0 無感 — 5 ひとめ惚れ', en:'Gut score · 0 meh — 5 love at first sight', de:'Bauchgefühl · 0 nichts — 5 Liebe auf den ersten Blick'} },
+  { id:'note', label:{zh:'特殊备注',ja:'特記事項',en:'Notes',de:'Notizen'}, icon:'✐', group:'subj', type:'note', default:'',
+    placeholder:{zh:'其他想记的，会一并复制…', ja:'その他のメモ、コピーに含まれます…', en:'Anything else to note, included in copy…', de:'Weitere Notizen, werden mitkopiert…'} },
 ];
 
 const DEFAULT_THRESHOLDS = { good:6, ok:5, mid:4 };
 
 const UI = {
-  title:        {zh:'房源评分', ja:'物件スコア'},
-  verdictGood:  {zh:'强烈推荐看房', ja:'ぜひ内見を'},
-  verdictOk:    {zh:'值得考虑', ja:'検討の価値あり'},
-  verdictMid:   {zh:'一般', ja:'まあまあ'},
-  verdictBad:   {zh:'不推荐', ja:'おすすめしない'},
-  settingsTitle:{zh:'设置', ja:'設定'},
-  resetTip:     {zh:'重置本次输入', ja:'今回の入力をリセット'},
-  copyTip:      {zh:'复制评估', ja:'評価をコピー'},
-  settingsTip:  {zh:'设置', ja:'設定'},
-  sheetSub:     {zh:'修改后自动保存', ja:'変更は自動保存'},
-  done:         {zh:'完成', ja:'完了'},
-  secCurrency:  {zh:'货币显示', ja:'通貨表示'},
-  secWeights:   {zh:'重要度（权重）', ja:'重要度（重み）'},
-  weightNote:   {zh:'选择每项的重要程度，可微调（0.5）', ja:'各項目の重要度を選択・微調整（0.5）'},
-  secRanges:    {zh:'评分范围', ja:'スコア範囲'},
-  rangeNote:    {zh:'设定真实数值映射到分数的区间', ja:'実数値がスコアに変換される区間'},
-  rangeAreaLow: {zh:'面积 · 0 分线以下', ja:'広さ · 0点ライン以下'},
-  rangeAreaHigh:{zh:'面积 · 满分线以上', ja:'広さ · 満点ライン以上'},
-  rangeRentLow: {zh:'租金 · 满分线以下', ja:'家賃 · 満点ライン以下'},
-  rangeRentHigh:{zh:'租金 · 0 分线以上', ja:'家賃 · 0点ライン以上'},
-  rangeNachLow: {zh:'Nach · 满分线以下', ja:'Nach · 満点ライン以下'},
-  rangeNachHigh:{zh:'Nach · 0 分线以上', ja:'Nach · 0点ライン以上'},
-  rangeCommutePre:{zh:'通勤 · 第 ', ja:'通勤 · '},
-  rangeCommuteSuf:{zh:' 档 ≤', ja:' 段階目 ≤'},
-  secThresh:    {zh:'评判阈值', ja:'判定しきい値'},
-  threshNote:   {zh:'10 分制 · 分数达到该线即归入对应评价', ja:'10点満点 · スコアがこの値以上で各評価に'},
-  secCustom:    {zh:'自定义项目', ja:'カスタム項目'},
-  customNote:   {zh:'添加你自己的评分项（有/无 或 0–5 评分）', ja:'独自の評価項目を追加（有/無 または 0–5 評価）'},
-  customNamePh: {zh:'项目名称', ja:'項目名'},
-  customTypeBool:{zh:'有/无', ja:'有/無'},
-  customTypeRate:{zh:'评分', ja:'評価'},
-  customAdd:    {zh:'添加', ja:'追加'},
-  customEmpty:  {zh:'还没有自定义项目', ja:'カスタム項目はまだありません'},
-  wsPre:        {zh:'当前满分合计', ja:'現在の満点合計'},
-  wsSuf:        {zh:'分', ja:'点'},
-  resetAll:     {zh:'恢复默认设置', ja:'設定を初期化'},
-  confirmReset: {zh:'清空本次所有评分？（设置会保留）', ja:'今回のスコアをすべてクリアしますか？（設定は保持）'},
-  confirmResetAll:{zh:'恢复重要度、范围、阈值为默认值？（自定义项目会保留）', ja:'重要度・範囲・しきい値を初期値に戻しますか？（カスタム項目は保持）'},
+  title:        {zh:'房源评分', ja:'物件スコア', en:'Home Score', de:'Wohn-Score'},
+  verdictGood:  {zh:'绝世好房', ja:'ぜひ内見を', en:'Must view!', de:'Unbedingt!'},
+  verdictOk:    {zh:'值得考虑', ja:'検討の価値あり', en:'Worth a look', de:'Sehenswert'},
+  verdictMid:   {zh:'一般', ja:'まあまあ', en:'So-so', de:'Mittel'},
+  verdictBad:   {zh:'不推荐', ja:'おすすめしない', en:'Skip it', de:'Eher nein'},
+  settingsTitle:{zh:'设置', ja:'設定', en:'Settings', de:'Einstellungen'},
+  resetTip:     {zh:'重置本次输入', ja:'今回の入力をリセット', en:'Reset entries', de:'Eingaben zurücksetzen'},
+  copyTip:      {zh:'复制评估', ja:'評価をコピー', en:'Copy summary', de:'Zusammenfassung kopieren'},
+  settingsTip:  {zh:'设置', ja:'設定', en:'Settings', de:'Einstellungen'},
+  sheetSub:     {zh:'修改后自动保存', ja:'変更は自動保存', en:'Saved automatically', de:'Automatisch gespeichert'},
+  done:         {zh:'完成', ja:'完了', en:'Done', de:'Fertig'},
+  secCurrency:  {zh:'货币显示', ja:'通貨表示', en:'Currency', de:'Währung'},
+  secWeights:   {zh:'重要度（权重）', ja:'重要度（重み）', en:'Importance', de:'Wichtigkeit'},
+  weightNote:   {zh:'选择每项的重要程度，可微调（0.5）', ja:'各項目の重要度を選択・微調整（0.5）', en:'Set how much each item matters (fine-tune 0.5)', de:'Wichtigkeit je Punkt festlegen (Feinstufung 0,5)'},
+  secRanges:    {zh:'评分范围', ja:'スコア範囲', en:'Score ranges', de:'Bewertungsbereiche'},
+  rangeNote:    {zh:'设定真实数值映射到分数的区间', ja:'実数値がスコアに変換される区間', en:'Map real values onto the score range', de:'Reale Werte dem Score-Bereich zuordnen'},
+  rangeAreaLow: {zh:'面积 · 0 分线以下', ja:'広さ · 0点ライン以下', en:'Area · 0-point line', de:'Fläche · 0-Punkte-Linie'},
+  rangeAreaHigh:{zh:'面积 · 满分线以上', ja:'広さ · 満点ライン以上', en:'Area · full-point line', de:'Fläche · Maximal-Linie'},
+  rangeRentLow: {zh:'租金 · 满分线以下', ja:'家賃 · 満点ライン以下', en:'Rent · full-point line', de:'Miete · Maximal-Linie'},
+  rangeRentHigh:{zh:'租金 · 0 分线以上', ja:'家賃 · 0点ライン以上', en:'Rent · 0-point line', de:'Miete · 0-Punkte-Linie'},
+  rangeNachLow: {zh:'Nach · 满分线以下', ja:'Nach · 満点ライン以下', en:'Nach · full-point line', de:'Nach · Maximal-Linie'},
+  rangeNachHigh:{zh:'Nach · 0 分线以上', ja:'Nach · 0点ライン以上', en:'Nach · 0-point line', de:'Nach · 0-Punkte-Linie'},
+  rangeCommutePre:{zh:'通勤 · 第 ', ja:'通勤 · ', en:'Commute · tier ', de:'Arbeitsweg · Stufe '},
+  rangeCommuteSuf:{zh:' 档 ≤', ja:' 段階目 ≤', en:' ≤', de:' ≤'},
+  secThresh:    {zh:'评判阈值', ja:'判定しきい値', en:'Verdict thresholds', de:'Bewertungsschwellen'},
+  threshNote:   {zh:'10 分制 · 分数达到该线即归入对应评价', ja:'10点満点 · スコアがこの値以上で各評価に', en:'10-pt scale · score at/above sets the verdict', de:'10-Punkte · ab diesem Wert gilt die Bewertung'},
+  secCustom:    {zh:'自定义项目', ja:'カスタム項目', en:'Custom items', de:'Eigene Punkte'},
+  customNote:   {zh:'添加你自己的评分项（有/无 或 0–5 评分）', ja:'独自の評価項目を追加（有/無 または 0–5 評価）', en:'Add your own item (yes/no or 0–5)', de:'Eigenen Punkt hinzufügen (Ja/Nein oder 0–5)'},
+  customNamePh: {zh:'项目名称', ja:'項目名', en:'Item name', de:'Bezeichnung'},
+  customTypeBool:{zh:'有/无', ja:'有/無', en:'Yes/No', de:'Ja/Nein'},
+  customTypeRate:{zh:'评分', ja:'評価', en:'Rating', de:'Bewertung'},
+  customAdd:    {zh:'添加', ja:'追加', en:'Add', de:'Hinzufügen'},
+  customEmpty:  {zh:'还没有自定义项目', ja:'カスタム項目はまだありません', en:'No custom items yet', de:'Noch keine eigenen Punkte'},
+  wsPre:        {zh:'当前满分合计', ja:'現在の満点合計', en:'Max total', de:'Maximalsumme'},
+  wsSuf:        {zh:'分', ja:'点', en:'pts', de:'Pkt.'},
+  resetAll:     {zh:'恢复默认设置', ja:'設定を初期化', en:'Restore defaults', de:'Zurücksetzen'},
+  confirmReset: {zh:'清空本次所有评分？（设置会保留）', ja:'今回のスコアをすべてクリアしますか？（設定は保持）', en:'Clear all entries this round? (settings kept)', de:'Alle Eingaben löschen? (Einstellungen bleiben)'},
+  confirmResetAll:{zh:'恢复重要度、范围、阈值为默认值？（自定义项目会保留）', ja:'重要度・範囲・しきい値を初期値に戻しますか？（カスタム項目は保持）', en:'Reset importance, ranges and thresholds to default? (custom items kept)', de:'Wichtigkeit, Bereiche und Schwellen zurücksetzen? (eigene Punkte bleiben)'},
 };
 
 /* ===================== 逻辑 / ロジック ===================== */
 
-const LS_WEIGHTS  = 'houseScoreWeights_v3';
+const LS_WEIGHTS  = 'houseScoreWeights_v4';
 const LS_THRESH   = 'houseScoreThresholds_v3';
-const LS_PARAMS   = 'houseScoreParams_v2';
+const LS_PARAMS   = 'houseScoreParams_v3';
 const LS_LANG     = 'houseScoreLang_v1';
 const LS_CURRENCY = 'houseScoreCurrency_v1';
 const LS_CUSTOM   = 'houseScoreCustom_v1';
@@ -403,7 +406,7 @@ const byId = id => CONFIG.find(i=>i.id===id);
 
 // 语言
 let lang = 'zh';
-try{ const sl = localStorage.getItem(LS_LANG); if(sl==='zh'||sl==='ja') lang = sl; }catch(e){}
+try{ const sl = localStorage.getItem(LS_LANG); if(['zh','ja','en','de'].includes(sl)) lang = sl; }catch(e){}
 function L(field){ if(field==null) return ''; if(typeof field==='string') return field; return field[lang] || field.zh || ''; }
 
 // 货币
@@ -411,6 +414,7 @@ let currency = 'EUR';
 try{ const sc = localStorage.getItem(LS_CURRENCY); if(CURRENCIES.some(c=>c.id===sc)) currency = sc; }catch(e){}
 function curSym(){ const c = CURRENCIES.find(x=>x.id===currency); return c ? c.sym : '€'; }
 function unitOf(it){ return it.currency ? curSym() : (it.unit||''); }
+function minUnit(){ return lang==='en' ? 'min' : lang==='de' ? 'Min.' : '分'; }
 
 // 自定义项目
 function buildCustomItem(c){
@@ -678,16 +682,18 @@ const CHECK_ICON = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" 
 
 function buildDescription(){
   const s = score10();
+  const cjk = (lang==='zh'||lang==='ja');
+  const gO = cjk?'【':'[', gC = cjk?'】':']', sep = cjk?'：':': ';
   const lines = [ L(UI.title)+' '+s.toFixed(1)+'/10 · '+verdictOf(s).label, '' ];
   GROUP_ORDER.forEach(g=>{
     const items = CONFIG.filter(it=>it.group===g);
     if(items.length===0) return;
     const printed = [];
     items.forEach(it=>{
-      if(it.type==='note'){ const t=describeValue(it); if(t) printed.push('· '+L(it.label)+'：'+t); return; }
-      printed.push('· '+L(it.label)+'：'+describeValue(it));
+      if(it.type==='note'){ const t=describeValue(it); if(t) printed.push('· '+L(it.label)+sep+t); return; }
+      printed.push('· '+L(it.label)+sep+describeValue(it));
     });
-    if(printed.length){ lines.push('【'+L(GROUPS[g])+'】'); printed.forEach(p=>lines.push(p)); }
+    if(printed.length){ lines.push(gO+L(GROUPS[g])+gC); printed.forEach(p=>lines.push(p)); }
   });
   return lines.join('\n');
 }
@@ -817,7 +823,7 @@ function renderRanges(){
       L(UI.rangeCommutePre)+(i+1)+L(UI.rangeCommuteSuf),
       ()=>params.commute.times[i],
       v=>{ params.commute.times[i]=v; apply(); },
-      1, '分'
+      1, minUnit()
     ));
   });
 }
@@ -923,8 +929,10 @@ document.getElementById('customAdd').onclick = addCustom;
 /* ---------- 语言切换 ---------- */
 const langZh = document.getElementById('langZh');
 const langJa = document.getElementById('langJa');
+const langEn = document.getElementById('langEn');
+const langDe = document.getElementById('langDe');
 function applyLang(){
-  document.documentElement.lang = (lang==='ja'?'ja':'zh-CN');
+  document.documentElement.lang = ({zh:'zh-CN',ja:'ja',en:'en',de:'de'})[lang] || 'zh-CN';
   document.title = L(UI.title);
   document.getElementById('title').textContent = L(UI.title);
   document.getElementById('resetBtn').title = L(UI.resetTip);
@@ -952,6 +960,8 @@ function applyLang(){
   fillImpSelect();
   langZh.classList.toggle('on', lang==='zh');
   langJa.classList.toggle('on', lang==='ja');
+  langEn.classList.toggle('on', lang==='en');
+  langDe.classList.toggle('on', lang==='de');
   renderBody();
   if(overlay.classList.contains('show')) renderSettings();
   else setMaxUI();
@@ -960,6 +970,8 @@ function applyLang(){
 function setLang(l){ lang=l; try{localStorage.setItem(LS_LANG,l);}catch(e){} applyLang(); }
 langZh.onclick = ()=>setLang('zh');
 langJa.onclick = ()=>setLang('ja');
+langEn.onclick = ()=>setLang('en');
+langDe.onclick = ()=>setLang('de');
 
 /* ---------- 启动 ---------- */
 applyLang();
