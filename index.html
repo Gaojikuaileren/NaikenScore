@@ -101,8 +101,8 @@
   .done-btn{border:none;background:var(--ink);color:var(--sel-text);font-family:var(--font-ui);font-size:14px;font-weight:600;padding:8px 18px;border-radius:11px;cursor:pointer;}
   .done-btn:active{transform:scale(.96);}
   .sheet-body{overflow-y:auto;padding:8px 20px 4px;flex:1;-webkit-overflow-scrolling:touch;}
-  .sec-label{font-size:12px;font-weight:600;letter-spacing:.5px;color:var(--ink-soft);text-transform:uppercase;margin:14px 0 2px;}
-  .thresh-note{font-size:11.5px;color:var(--ink-soft);margin:2px 0 4px;}
+  .sec-label{font-size:12px;font-weight:600;letter-spacing:.5px;color:var(--ink-soft);text-transform:uppercase;margin:16px 0 2px;}
+  .thresh-note{font-size:11.5px;color:var(--ink-soft);margin:2px 0 6px;}
   .wrow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 0;border-bottom:1px solid var(--line);}
   .wrow:last-child{border-bottom:none;}
   .wrow .wn{font-size:14.5px;}
@@ -114,6 +114,38 @@
   .stepper button:active{background:var(--chip);}
   .stepper input{width:54px;height:38px;border:none;border-left:1px solid var(--line);border-right:1px solid var(--line);text-align:center;background:var(--card);color:var(--ink);font-family:var(--font-num);font-weight:500;font-size:15px;}
   .stepper input:focus{outline:none;}
+  /* 重要度卡片 */
+  .wcard{padding:13px 2px;border-bottom:1px solid var(--line);}
+  .wcard:last-child{border-bottom:none;}
+  .wcard-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:9px;}
+  .wcard-top .wn{font-size:14.5px;}
+  .wcard-top .wn small{display:block;color:var(--ink-soft);font-size:11px;margin-top:1px;}
+  .imp-seg{display:flex;gap:5px;}
+  .imp-seg button{flex:1;min-width:0;min-height:40px;padding:6px 2px;border-radius:9px;border:1px solid var(--line-strong);background:var(--chip);color:var(--chip-text);font-family:var(--font-ui);font-size:11px;font-weight:500;cursor:pointer;line-height:1.25;transition:background .12s,color .12s,border-color .12s;}
+  .imp-seg button.on{background:var(--sel-bg);color:var(--sel-text);border-color:var(--sel-bg);}
+  /* 货币 */
+  .cur-seg{display:flex;gap:6px;margin:6px 0 2px;}
+  .cur-seg button{flex:1;min-height:42px;border-radius:11px;border:1px solid var(--line-strong);background:var(--chip);color:var(--chip-text);font-family:var(--font-num);font-size:18px;font-weight:600;cursor:pointer;transition:background .12s,color .12s,border-color .12s;}
+  .cur-seg button.on{background:var(--sel-bg);color:var(--sel-text);border-color:var(--sel-bg);}
+  /* 自定义项目 */
+  .cf{display:flex;flex-direction:column;gap:9px;margin:10px 0 4px;}
+  .cf-name{width:100%;border:1px solid var(--line-strong);border-radius:10px;background:var(--chip);color:var(--ink);font-family:var(--font-ui);font-size:14px;padding:11px 12px;}
+  .cf-name:focus{outline:none;border-color:var(--ink-soft);background:var(--card);}
+  .cf-name::placeholder{color:var(--ink-soft);}
+  .cf-row{display:flex;gap:8px;align-items:center;}
+  .cf-type{display:flex;gap:6px;flex:1;}
+  .cf-type button{flex:1;min-height:38px;border-radius:9px;border:1px solid var(--line-strong);background:var(--chip);color:var(--chip-text);font-family:var(--font-ui);font-size:13px;font-weight:500;cursor:pointer;}
+  .cf-type button.on{background:var(--sel-bg);color:var(--sel-text);border-color:var(--sel-bg);}
+  .cf select{height:38px;border-radius:9px;border:1px solid var(--line-strong);background:var(--card);color:var(--ink);font-family:var(--font-ui);font-size:13px;padding:0 8px;}
+  .cf-add{height:38px;padding:0 16px;border-radius:9px;border:none;background:var(--ink);color:var(--sel-text);font-family:var(--font-ui);font-size:14px;font-weight:600;cursor:pointer;}
+  .cf-add:active{transform:scale(.96);}
+  .custom-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 2px;border-bottom:1px solid var(--line);}
+  .custom-item:last-child{border-bottom:none;}
+  .custom-item .ci-name{font-size:14px;}
+  .custom-item .ci-name small{display:block;color:var(--ink-soft);font-size:11px;margin-top:1px;}
+  .ci-del{width:34px;height:34px;border-radius:9px;border:1px solid var(--line-strong);background:transparent;color:var(--bad);font-size:18px;cursor:pointer;flex:none;}
+  .ci-del:active{background:var(--chip);}
+  .custom-empty{font-size:12.5px;color:var(--ink-soft);padding:6px 2px;}
   .sheet-foot{padding:14px 20px calc(16px + env(safe-area-inset-bottom));border-top:1px solid var(--line);}
   .reset-weights{width:100%;padding:13px;border-radius:13px;border:1px solid var(--line-strong);background:transparent;color:var(--ink-soft);font-family:var(--font-ui);font-size:14px;font-weight:500;cursor:pointer;}
   .reset-weights:active{background:var(--chip);}
@@ -165,14 +197,35 @@
       <button class="done-btn" id="doneBtn">完成</button>
     </div>
     <div class="sheet-body">
-      <div class="sec-label" id="secWeightsLabel">权重</div>
+      <div class="sec-label" id="secCurrencyLabel">货币显示</div>
+      <div class="cur-seg" id="currencySeg"></div>
+
+      <div class="sec-label" id="secWeightsLabel">重要度</div>
+      <div class="thresh-note" id="weightNote"></div>
       <div id="weightList"></div>
+
       <div class="sec-label" id="secRangesLabel">评分范围</div>
       <div class="thresh-note" id="rangeNote"></div>
       <div id="rangeList"></div>
+
       <div class="sec-label" id="secThreshLabel">评判阈值</div>
       <div class="thresh-note" id="threshNote"></div>
       <div id="threshList"></div>
+
+      <div class="sec-label" id="secCustomLabel">自定义项目</div>
+      <div class="thresh-note" id="customNote"></div>
+      <div id="customList"></div>
+      <div class="cf">
+        <input class="cf-name" id="customName" placeholder="项目名称">
+        <div class="cf-row">
+          <div class="cf-type" id="customType">
+            <button data-t="segment" id="ctBool" class="on">有/无</button>
+            <button data-t="direct" id="ctRate">评分</button>
+          </div>
+          <select id="customImp"></select>
+          <button class="cf-add" id="customAdd">添加</button>
+        </div>
+      </div>
     </div>
     <div class="sheet-foot">
       <div class="total-line"><span id="wsPre">当前满分合计</span> <b id="weightSum">0</b> <span id="wsSuf">分</span></div>
@@ -184,87 +237,114 @@
 <script>
 /* =========================================================================
    配置区 / 設定エリア
-   添加新评分项：在 CONFIG 里加一个对象即可，界面自动生成。
-   所有文案均为 {zh:'中文', ja:'日本語'} 双语对象。
+   添加新评分项：在 BASE_CONFIG 里加一个对象即可，界面自动生成。
+   （也可在「设置 → 自定义项目」里由用户手动添加。）
+   所有文案均为 {zh:'中文', ja:'日本語'} 双语对象；自定义项的名称为单一字符串。
 
-   字段：id 唯一key / label 名称 / icon 图标 / group 分组id / weight 满分 / default 默认状态
+   字段：id 唯一key / label 名称 / icon 图标 / group 分组id / weight 重要度 / default 默认状态
    类型 type：
-     'segment' 按钮项 options:[{label,factor}]  得分=factor×weight (factor 可负，可做扣分项)
-     'direct'  直接打分滑块 0~weight，得分=滑块值  (step/default/unit/hint)
-     'smooth'  平滑映射滑块 真实数值→0~weight  (min/max/lowBound/highBound/step/unit/default; inverted=越小越好)
-               lowBound/highBound 为默认范围，可在设置面板中调整
+     'segment' 按钮项 options:[{label,factor}]  得分 = factor(0~1) × 重要度
+     'direct'  评分滑块 0~5(DIRECT_MAX)，得分 = (滑块值/5) × 重要度  (step 固定 0.5 / hint)
+     'smooth'  平滑映射滑块 真实数值→0~1 因子，得分 = 因子 × 重要度
+               (min/max/lowBound/highBound/step/unit/default; inverted=越小越好; currency=用货币符号)
      'note'    纯文本备注，不计分，内容会进入一键复制
+   ★ 所有项目因子均为 0~1，无扣分项；重要度统一为 1/2/4/6/9（可 0.5 微调）。
    ========================================================================= */
 
+const DIRECT_MAX = 5;          // 评分滑块上限
+const DIRECT_STEP = 0.5;
+
+// 重要度等级（同一等级 = 同一乘积，体现比重）
+const IMPORTANCE = [
+  {v:1, label:{zh:'可有可无', ja:'不問'}},
+  {v:2, label:{zh:'一般',     ja:'普通'}},
+  {v:4, label:{zh:'有点重要', ja:'やや重要'}},
+  {v:6, label:{zh:'重要',     ja:'重要'}},
+  {v:9, label:{zh:'非常重要', ja:'最重要'}},
+];
+
 const GROUPS = {
-  comfort:  {zh:'生活舒适度', ja:'暮らしの快適さ'},
-  space:    {zh:'工作与空间', ja:'仕事とスペース'},
-  location: {zh:'位置与环境', ja:'立地と環境'},
-  cost:     {zh:'经济与条件', ja:'費用と条件'},
-  defect:   {zh:'潜在减分项', ja:'マイナス要素'},
-  subj:     {zh:'主观',       ja:'主観'},
+  core:    {zh:'核心指标',    ja:'コア項目'},
+  comfort: {zh:'生活舒适度',  ja:'暮らしの快適さ'},
+  space:   {zh:'空间与工作',  ja:'空間と仕事'},
+  cost:    {zh:'经济与条件',  ja:'費用と条件'},
+  custom:  {zh:'自定义',      ja:'カスタム'},
+  subj:    {zh:'主观',        ja:'主観'},
 };
+const GROUP_ORDER = ['core','comfort','space','cost','custom','subj'];
 
-const CONFIG = [
-  // —— 生活舒适度 ——
-  { id:'sunlight', label:{zh:'阳光光照',ja:'日当たり'}, icon:'☀', group:'comfort', type:'direct', weight:3, step:0.5, default:0,
-    hint:{zh:'0 阴暗 — 满分 充足', ja:'0 暗い — 満点 明るい'} },
-  { id:'balcony', label:{zh:'阳台',ja:'バルコニー'}, icon:'❏', group:'comfort', type:'segment', weight:2, default:0,
-    options:[{label:{zh:'无阳台',ja:'なし'},factor:0},{label:{zh:'小阳台',ja:'小さい'},factor:0.5},{label:{zh:'好阳台',ja:'広い'},factor:1}] },
-  { id:'bathtub', label:{zh:'浴缸',ja:'バスタブ'}, icon:'◗', group:'comfort', type:'segment', weight:2, default:0,
-    options:[{label:{zh:'无',ja:'なし'},factor:0},{label:{zh:'有',ja:'あり'},factor:1}] },
-  { id:'kitchen', label:{zh:'厨房',ja:'キッチン'}, icon:'▤', group:'comfort', type:'segment', weight:4, default:0,
-    options:[{label:{zh:'无',ja:'なし'},factor:0},{label:{zh:'简易',ja:'簡易'},factor:0.5},{label:{zh:'完整',ja:'充実'},factor:1}] },
-  { id:'guest_wc', label:{zh:'客人洗手间',ja:'来客用トイレ'}, icon:'◔', group:'comfort', type:'segment', weight:1, default:0,
-    options:[{label:{zh:'无',ja:'なし'},factor:0},{label:{zh:'有',ja:'あり'},factor:1}] },
+// 货币（仅切换显示符号，不做汇率换算）
+const CURRENCIES = [
+  {id:'EUR', sym:'€'},
+  {id:'USD', sym:'$'},
+  {id:'CNY', sym:'¥'},
+  {id:'JPY', sym:'円'},
+];
 
-  // —— 工作与空间 ——
-  { id:'workspace', label:{zh:'工作空间',ja:'ワークスペース'}, icon:'▦', group:'space', type:'direct', weight:6, step:1, default:0,
-    hint:{zh:'0 无 · 中段 卧室/客厅办公 · 满分 独立书房', ja:'0 なし · 中間 寝室/リビング作業 · 満点 書斎'} },
-  { id:'area', label:{zh:'面积',ja:'広さ'}, icon:'⬚', group:'space', type:'smooth', weight:10,
+const BASE_CONFIG = [
+  // —— 核心指标（置顶）——
+  { id:'area', label:{zh:'面积',ja:'広さ'}, icon:'⬚', group:'core', type:'smooth', weight:9,
     min:30, max:120, lowBound:50, highBound:80, step:1, unit:'㎡', default:50 },
-  { id:'openness', label:{zh:'空间开放感',ja:'開放感'}, icon:'⤢', group:'space', type:'direct', weight:2, step:0.5, default:0,
-    hint:{zh:'0 压抑 — 满分 开阔', ja:'0 圧迫 — 満点 開放的'} },
-  { id:'floor', label:{zh:'楼层',ja:'階数'}, icon:'⌂', group:'space', type:'segment', weight:4, default:1,
-    options:[{label:{zh:'0–1楼',ja:'0〜1階'},factor:1},{label:{zh:'其他',ja:'その他'},factor:0},{label:{zh:'顶楼',ja:'最上階'},factor:-0.5}] },
-
-  // —— 位置与环境 ——
-  { id:'parking', label:{zh:'停车场',ja:'駐車場'}, icon:'⊟', group:'location', type:'segment', weight:1, default:0,
-    options:[{label:{zh:'无',ja:'なし'},factor:0},{label:{zh:'有',ja:'あり'},factor:1}] },
-  { id:'commute', label:{zh:'通勤时间',ja:'通勤時間'}, icon:'➤', group:'location', type:'segment', weight:7, default:3,
+  { id:'rent', label:{zh:'月租金',ja:'月額家賃'}, icon:'◈', group:'core', type:'smooth', weight:9,
+    min:400, max:1600, lowBound:600, highBound:1100, inverted:true, step:10, currency:true, default:1000 },
+  { id:'commute', label:{zh:'通勤时间',ja:'通勤時間'}, icon:'➤', group:'core', type:'segment', weight:6, default:3,
     times:[10,13,15],
     options:[{factor:1},{factor:0.667},{factor:0.333},{factor:0}],
     optionLabel:(idx,times)=>{ const last=times[times.length-1];
       return idx<times.length ? {zh:'≤'+times[idx]+'分',ja:times[idx]+'分以内'} : {zh:'>'+last+'分',ja:last+'分超'}; } },
-  { id:'env', label:{zh:'环境',ja:'環境'}, icon:'❡', group:'location', type:'direct', weight:8, step:0.5, default:0,
-    hint:{zh:'0 差 — 满分 好', ja:'0 悪い — 満点 良い'} },
+  { id:'env', label:{zh:'环境',ja:'環境'}, icon:'❡', group:'core', type:'direct', weight:6, default:0,
+    hint:{zh:'0 差 — 5 好', ja:'0 悪い — 5 良い'} },
+
+  // —— 生活舒适度 ——
+  { id:'sunlight', label:{zh:'阳光光照',ja:'日当たり'}, icon:'☀', group:'comfort', type:'direct', weight:4, default:0,
+    hint:{zh:'0 阴暗 — 5 充足', ja:'0 暗い — 5 明るい'} },
+  { id:'balcony', label:{zh:'阳台',ja:'バルコニー'}, icon:'❏', group:'comfort', type:'segment', weight:2, default:0,
+    options:[{label:{zh:'无阳台',ja:'なし'},factor:0},{label:{zh:'小阳台',ja:'小さい'},factor:0.5},{label:{zh:'好阳台',ja:'広い'},factor:1}] },
+  { id:'bathtub', label:{zh:'浴缸',ja:'バスタブ'}, icon:'◗', group:'comfort', type:'segment', weight:1, default:0,
+    options:[{label:{zh:'无',ja:'なし'},factor:0},{label:{zh:'有',ja:'あり'},factor:1}] },
+  { id:'kitchen', label:{zh:'厨房',ja:'キッチン'}, icon:'▤', group:'comfort', type:'segment', weight:4, default:0,
+    options:[{label:{zh:'无',ja:'なし'},factor:0},{label:{zh:'简易',ja:'簡易'},factor:0.5},{label:{zh:'完整',ja:'充実'},factor:1}] },
+  { id:'hood', label:{zh:'抽油烟机',ja:'レンジフード'}, icon:'♨', group:'comfort', type:'segment', weight:2, default:0,
+    options:[{label:{zh:'可安装',ja:'設置可'},factor:1},{label:{zh:'无法安装',ja:'設置不可'},factor:0}] },
+  { id:'tiles', label:{zh:'墙壁 / 瓷砖',ja:'壁 / タイル'}, icon:'▩', group:'comfort', type:'segment', weight:2, default:0,
+    options:[{label:{zh:'正常',ja:'普通'},factor:1},{label:{zh:'怪异',ja:'変'},factor:0}] },
+  { id:'guest_wc', label:{zh:'客人洗手间',ja:'来客用トイレ'}, icon:'◔', group:'comfort', type:'segment', weight:1, default:0,
+    options:[{label:{zh:'无',ja:'なし'},factor:0},{label:{zh:'有',ja:'あり'},factor:1}] },
+
+  // —— 空间与工作 ——
+  { id:'workspace', label:{zh:'工作空间',ja:'ワークスペース'}, icon:'▦', group:'space', type:'direct', weight:6, default:0,
+    hint:{zh:'0 无 · 中段 卧室/客厅办公 · 5 独立书房', ja:'0 なし · 中間 寝室/リビング作業 · 5 書斎'} },
+  { id:'openness', label:{zh:'空间开放感',ja:'開放感'}, icon:'⤢', group:'space', type:'direct', weight:2, default:0,
+    hint:{zh:'0 压抑 — 5 开阔', ja:'0 圧迫 — 5 開放的'} },
+  { id:'floor', label:{zh:'楼层',ja:'階数'}, icon:'⌂', group:'space', type:'segment', weight:2, default:1,
+    options:[{label:{zh:'0–1楼',ja:'0〜1階'},factor:1},{label:{zh:'其他',ja:'その他'},factor:0.5},{label:{zh:'顶楼',ja:'最上階'},factor:0}] },
+  { id:'storage', label:{zh:'储物空间',ja:'収納スペース'}, icon:'☰', group:'space', type:'segment', weight:2, default:0,
+    options:[{label:{zh:'无',ja:'なし'},factor:0},{label:{zh:'有',ja:'あり'},factor:1}] },
+  { id:'basement', label:{zh:'地下室',ja:'地下室'}, icon:'⬓', group:'space', type:'segment', weight:1, default:0,
+    options:[{label:{zh:'无',ja:'なし'},factor:0},{label:{zh:'有',ja:'あり'},factor:1}] },
+  { id:'fridge', label:{zh:'大冰箱',ja:'大型冷蔵庫'}, icon:'❄', group:'space', type:'segment', weight:4, default:0,
+    options:[{label:{zh:'放得下',ja:'置ける'},factor:1},{label:{zh:'放不下',ja:'置けない'},factor:0}] },
 
   // —— 经济与条件 ——
-  { id:'rent', label:{zh:'月租金',ja:'月額家賃'}, icon:'€', group:'cost', type:'smooth', weight:6,
-    min:400, max:1600, lowBound:600, highBound:1100, inverted:true, step:10, unit:'€', default:1000 },
-  { id:'reno', label:{zh:'装修状况',ja:'内装の状態'}, icon:'✎', group:'cost', type:'direct', weight:3, step:0.5, default:0,
-    hint:{zh:'0 旧 — 满分 新', ja:'0 古い — 満点 新しい'} },
-  { id:'pet', label:{zh:'宠物政策',ja:'ペット可否'}, icon:'❖', group:'cost', type:'segment', weight:1, default:1,
-    options:[{label:{zh:'明确禁止',ja:'明確に不可'},factor:-3},{label:{zh:'没说',ja:'記載なし'},factor:0},{label:{zh:'明确允许',ja:'明確に可'},factor:1}] },
-  { id:'landlord', label:{zh:'房东 / 机构',ja:'大家 / 管理会社'}, icon:'☻', group:'cost', type:'segment', weight:1, default:2,
-    options:[{label:{zh:'很差',ja:'悪い'},factor:-2},{label:{zh:'一般',ja:'ふつう'},factor:-1},{label:{zh:'未知',ja:'不明'},factor:0},{label:{zh:'好人',ja:'良い'},factor:1}] },
-
-  // —— 潜在减分项（只扣分，不计入满分）——
-  { id:'tiles', label:{zh:'怪异墙壁 / 瓷砖',ja:'変な壁 / タイル'}, icon:'▩', group:'defect', type:'segment', weight:2, default:0,
-    options:[{label:{zh:'没有',ja:'問題なし'},factor:0},{label:{zh:'有',ja:'あり'},factor:-1}] },
-  { id:'hood', label:{zh:'抽油烟机',ja:'レンジフード'}, icon:'♨', group:'defect', type:'segment', weight:2, default:0,
-    options:[{label:{zh:'可安装',ja:'設置可'},factor:0},{label:{zh:'无法安装',ja:'設置不可'},factor:-1}] },
-  { id:'fridge', label:{zh:'大冰箱',ja:'大型冷蔵庫'}, icon:'❄', group:'defect', type:'segment', weight:3, default:0,
-    options:[{label:{zh:'放得下',ja:'置ける'},factor:0},{label:{zh:'放不下',ja:'置けない'},factor:-1}] },
+  { id:'nach', label:{zh:'Nach 费用',ja:'Nach 費用'}, icon:'◇', group:'cost', type:'smooth', weight:2,
+    min:0, max:3000, lowBound:0, highBound:1500, inverted:true, step:50, currency:true, default:0,
+    hint:{zh:'额外/一次性费用 · 越低越好', ja:'追加・初期費用 · 低いほど良い'} },
+  { id:'reno', label:{zh:'装修状况',ja:'内装の状態'}, icon:'✎', group:'cost', type:'direct', weight:4, default:0,
+    hint:{zh:'0 旧 — 5 新', ja:'0 古い — 5 新しい'} },
+  { id:'parking', label:{zh:'停车场',ja:'駐車場'}, icon:'⊟', group:'cost', type:'segment', weight:1, default:0,
+    options:[{label:{zh:'无',ja:'なし'},factor:0},{label:{zh:'有',ja:'あり'},factor:1}] },
+  { id:'pet', label:{zh:'宠物政策',ja:'ペット可否'}, icon:'❖', group:'cost', type:'segment', weight:4, default:1,
+    options:[{label:{zh:'明确禁止',ja:'不可'},factor:0},{label:{zh:'没说',ja:'記載なし'},factor:0.5},{label:{zh:'明确允许',ja:'可'},factor:1}] },
+  { id:'landlord', label:{zh:'房东 / 机构',ja:'大家 / 管理会社'}, icon:'☻', group:'cost', type:'segment', weight:2, default:2,
+    options:[{label:{zh:'很差',ja:'悪い'},factor:0},{label:{zh:'一般',ja:'ふつう'},factor:0.33},{label:{zh:'未知',ja:'不明'},factor:0.67},{label:{zh:'好人',ja:'良い'},factor:1}] },
 
   // —— 主观 ——
-  { id:'subjective', label:{zh:'主观感受',ja:'直感評価'}, icon:'♥', group:'subj', type:'direct', weight:10, step:0.5, default:0,
-    hint:{zh:'凭直觉打分 · 0 无感 — 满分 一见钟情', ja:'直感で · 0 無感 — 満点 ひとめ惚れ'} },
+  { id:'subjective', label:{zh:'主观感受',ja:'直感評価'}, icon:'♥', group:'subj', type:'direct', weight:9, default:0,
+    hint:{zh:'凭直觉打分 · 0 无感 — 5 一见钟情', ja:'直感で · 0 無感 — 5 ひとめ惚れ'} },
   { id:'note', label:{zh:'特殊备注',ja:'特記事項'}, icon:'✐', group:'subj', type:'note', default:'',
     placeholder:{zh:'其他想记的，会一并复制…', ja:'その他のメモ、コピーに含まれます…'} },
 ];
 
-// 评判阈值默认值（10 分制）。强烈推荐 ≥ good，值得考虑 ≥ ok，一般 ≥ mid，低于 mid 为不推荐
 const DEFAULT_THRESHOLDS = { good:6, ok:5, mid:4 };
 
 const UI = {
@@ -279,30 +359,43 @@ const UI = {
   settingsTip:  {zh:'设置', ja:'設定'},
   sheetSub:     {zh:'修改后自动保存', ja:'変更は自動保存'},
   done:         {zh:'完成', ja:'完了'},
-  secWeights:   {zh:'权重（每项满分）', ja:'重み（各項目の満点）'},
+  secCurrency:  {zh:'货币显示', ja:'通貨表示'},
+  secWeights:   {zh:'重要度（权重）', ja:'重要度（重み）'},
+  weightNote:   {zh:'选择每项的重要程度，可微调（0.5）', ja:'各項目の重要度を選択・微調整（0.5）'},
   secRanges:    {zh:'评分范围', ja:'スコア範囲'},
   rangeNote:    {zh:'设定真实数值映射到分数的区间', ja:'実数値がスコアに変換される区間'},
   rangeAreaLow: {zh:'面积 · 0 分线以下', ja:'広さ · 0点ライン以下'},
   rangeAreaHigh:{zh:'面积 · 满分线以上', ja:'広さ · 満点ライン以上'},
   rangeRentLow: {zh:'租金 · 满分线以下', ja:'家賃 · 満点ライン以下'},
   rangeRentHigh:{zh:'租金 · 0 分线以上', ja:'家賃 · 0点ライン以上'},
+  rangeNachLow: {zh:'Nach · 满分线以下', ja:'Nach · 満点ライン以下'},
+  rangeNachHigh:{zh:'Nach · 0 分线以上', ja:'Nach · 0点ライン以上'},
   rangeCommutePre:{zh:'通勤 · 第 ', ja:'通勤 · '},
   rangeCommuteSuf:{zh:' 档 ≤', ja:' 段階目 ≤'},
   secThresh:    {zh:'评判阈值', ja:'判定しきい値'},
   threshNote:   {zh:'10 分制 · 分数达到该线即归入对应评价', ja:'10点満点 · スコアがこの値以上で各評価に'},
+  secCustom:    {zh:'自定义项目', ja:'カスタム項目'},
+  customNote:   {zh:'添加你自己的评分项（有/无 或 0–5 评分）', ja:'独自の評価項目を追加（有/無 または 0–5 評価）'},
+  customNamePh: {zh:'项目名称', ja:'項目名'},
+  customTypeBool:{zh:'有/无', ja:'有/無'},
+  customTypeRate:{zh:'评分', ja:'評価'},
+  customAdd:    {zh:'添加', ja:'追加'},
+  customEmpty:  {zh:'还没有自定义项目', ja:'カスタム項目はまだありません'},
   wsPre:        {zh:'当前满分合计', ja:'現在の満点合計'},
   wsSuf:        {zh:'分', ja:'点'},
   resetAll:     {zh:'恢复默认设置', ja:'設定を初期化'},
-  confirmReset: {zh:'清空本次所有评分？（权重、范围和阈值会保留）', ja:'今回のスコアをすべてクリアしますか？（重み・範囲・しきい値は保持）'},
-  confirmResetAll:{zh:'恢复所有权重、范围和阈值为默认值？', ja:'すべての重み・範囲・しきい値を初期値に戻しますか？'},
+  confirmReset: {zh:'清空本次所有评分？（设置会保留）', ja:'今回のスコアをすべてクリアしますか？（設定は保持）'},
+  confirmResetAll:{zh:'恢复重要度、范围、阈值为默认值？（自定义项目会保留）', ja:'重要度・範囲・しきい値を初期値に戻しますか？（カスタム項目は保持）'},
 };
 
 /* ===================== 逻辑 / ロジック ===================== */
 
-const LS_WEIGHTS = 'houseScoreWeights_v2';
-const LS_THRESH  = 'houseScoreThresholds_v3';
-const LS_PARAMS  = 'houseScoreParams_v1';
-const LS_LANG    = 'houseScoreLang_v1';
+const LS_WEIGHTS  = 'houseScoreWeights_v3';
+const LS_THRESH   = 'houseScoreThresholds_v3';
+const LS_PARAMS   = 'houseScoreParams_v2';
+const LS_LANG     = 'houseScoreLang_v1';
+const LS_CURRENCY = 'houseScoreCurrency_v1';
+const LS_CUSTOM   = 'houseScoreCustom_v1';
 
 const round1 = n => Math.round(n*10)/10;
 const clamp = (n,a,b)=>Math.max(a,Math.min(b,n));
@@ -313,7 +406,35 @@ let lang = 'zh';
 try{ const sl = localStorage.getItem(LS_LANG); if(sl==='zh'||sl==='ja') lang = sl; }catch(e){}
 function L(field){ if(field==null) return ''; if(typeof field==='string') return field; return field[lang] || field.zh || ''; }
 
-// 权重
+// 货币
+let currency = 'EUR';
+try{ const sc = localStorage.getItem(LS_CURRENCY); if(CURRENCIES.some(c=>c.id===sc)) currency = sc; }catch(e){}
+function curSym(){ const c = CURRENCIES.find(x=>x.id===currency); return c ? c.sym : '€'; }
+function unitOf(it){ return it.currency ? curSym() : (it.unit||''); }
+
+// 自定义项目
+function buildCustomItem(c){
+  if(c.type==='direct'){
+    return { id:c.id, label:c.label, icon:'•', group:'custom', type:'direct', weight:c.weight, default:0,
+      hint:{zh:'0 低 — 5 高', ja:'0 低い — 5 高い'} };
+  }
+  return { id:c.id, label:c.label, icon:'•', group:'custom', type:'segment', weight:c.weight, default:0,
+    options:[{label:{zh:'无',ja:'なし'},factor:0},{label:{zh:'有',ja:'あり'},factor:1}] };
+}
+let customItems = [];
+try{
+  const s = JSON.parse(localStorage.getItem(LS_CUSTOM) || '[]');
+  if(Array.isArray(s)) customItems = s.filter(c=>c && c.id && c.label && (c.type==='direct'||c.type==='segment'))
+    .map(c=>({ id:String(c.id), label:String(c.label), type:c.type, weight:(typeof c.weight==='number'?c.weight:2) }));
+}catch(e){}
+function persistCustom(){ try{ localStorage.setItem(LS_CUSTOM, JSON.stringify(customItems)); }catch(e){} }
+
+// CONFIG = 基础项 + 自定义项
+let CONFIG = [];
+function rebuildConfig(){ CONFIG = BASE_CONFIG.concat(customItems.map(buildCustomItem)); }
+rebuildConfig();
+
+// 重要度（权重）
 function defaultWeights(){ const w={}; CONFIG.forEach(i=>{ if(i.weight!=null) w[i.id]=i.weight; }); return w; }
 let weights = defaultWeights();
 try{
@@ -328,7 +449,6 @@ try{
   const s = JSON.parse(localStorage.getItem(LS_THRESH) || '{}');
   ['good','ok','mid'].forEach(k=>{ if(typeof s[k]==='number') thresholds[k]=s[k]; });
 }catch(e){}
-// 保证 good ≥ ok ≥ mid，且均在 0–10（10 分制）
 function normalizeThresholds(){
   const r=v=>clamp(Math.round(v*2)/2,0,10);
   thresholds.mid = r(thresholds.mid);
@@ -341,8 +461,9 @@ function persistThresholds(){ try{ localStorage.setItem(LS_THRESH, JSON.stringif
 // 可配置评分参数（smooth 范围 + 通勤档位）
 function defaultParams(){
   return {
-    area:    { low:byId('area').lowBound,  high:byId('area').highBound },
-    rent:    { low:byId('rent').lowBound,  high:byId('rent').highBound },
+    area:    { low:byId('area').lowBound, high:byId('area').highBound },
+    rent:    { low:byId('rent').lowBound, high:byId('rent').highBound },
+    nach:    { low:byId('nach').lowBound, high:byId('nach').highBound },
     commute: { times:[...byId('commute').times] },
   };
 }
@@ -351,16 +472,17 @@ try{
   const s = JSON.parse(localStorage.getItem(LS_PARAMS) || '{}');
   if(s.area && typeof s.area.low==='number' && typeof s.area.high==='number') params.area = {low:s.area.low, high:s.area.high};
   if(s.rent && typeof s.rent.low==='number' && typeof s.rent.high==='number') params.rent = {low:s.rent.low, high:s.rent.high};
+  if(s.nach && typeof s.nach.low==='number' && typeof s.nach.high==='number') params.nach = {low:s.nach.low, high:s.nach.high};
   if(s.commute && Array.isArray(s.commute.times)) params.commute = {times:s.commute.times.slice(0,3)};
 }catch(e){}
+function normRange(key){
+  const it = byId(key);
+  params[key].low  = clamp(Math.round(params[key].low),  it.min, it.max);
+  params[key].high = clamp(Math.round(params[key].high), it.min, it.max);
+  if(params[key].high <= params[key].low) params[key].high = Math.min(it.max, params[key].low + it.step);
+}
 function normalizeParams(){
-  const a=byId('area'), r=byId('rent');
-  params.area.low  = clamp(Math.round(params.area.low),  a.min, a.max);
-  params.area.high = clamp(Math.round(params.area.high), a.min, a.max);
-  if(params.area.high <= params.area.low) params.area.high = Math.min(a.max, params.area.low + a.step);
-  params.rent.low  = clamp(Math.round(params.rent.low),  r.min, r.max);
-  params.rent.high = clamp(Math.round(params.rent.high), r.min, r.max);
-  if(params.rent.high <= params.rent.low) params.rent.high = Math.min(r.max, params.rent.low + r.step);
+  normRange('area'); normRange('rent'); normRange('nach');
   let t = params.commute.times.map(x=>Math.max(1, Math.round(x)));
   while(t.length<3) t.push((t[t.length-1]||0)+1);
   if(t[1]<=t[0]) t[1]=t[0]+1;
@@ -388,22 +510,35 @@ function getOptionLabel(it, idx){
 function defaultState(){ const s={}; CONFIG.forEach(i=>s[i.id]=i.default); return s; }
 let state = defaultState();
 
-function itemScore(it){
-  if(it.type==='note') return 0;
-  const w = weights[it.id], v = state[it.id];
-  if(it.type==='segment') return it.options[v].factor * w;
-  if(it.type==='direct')  return clamp(v,0,w);
+// 新增/删除自定义项后同步 CONFIG / weights / state
+function syncCustom(){
+  rebuildConfig();
+  CONFIG.forEach(it=>{
+    if(it.weight!=null && weights[it.id]==null) weights[it.id]=it.weight;
+    if(state[it.id]==null) state[it.id]=it.default;
+  });
+}
+
+/* ---------- 计分 ---------- */
+function factorOf(it){
+  const v = state[it.id];
+  if(it.type==='segment') return it.options[v] ? it.options[v].factor : 0;
+  if(it.type==='direct')  return clamp(v,0,DIRECT_MAX)/DIRECT_MAX;
   if(it.type==='smooth'){
     const r = getRange(it);
     let f = it.inverted ? (r.high - v)/(r.high - r.low)
                         : (v - r.low)/(r.high - r.low);
-    return clamp(f,0,1) * w;
+    return clamp(f,0,1);
   }
   return 0;
 }
+function itemScore(it){
+  if(it.type==='note') return 0;
+  return factorOf(it) * (weights[it.id]||0);
+}
 function itemMax(it){
   if(it.type==='note') return 0;
-  const w = weights[it.id];
+  const w = weights[it.id]||0;
   if(it.type==='segment') return Math.max(0, ...it.options.map(o=>o.factor)) * w;
   return w;
 }
@@ -412,15 +547,15 @@ function total(){ return CONFIG.reduce((s,it)=>s+itemScore(it),0); }
 
 function displayVal(it){
   const v = state[it.id];
-  if(it.type==='direct') return round1(v) + (it.unit?(' '+it.unit):'');
-  if(it.type==='smooth') return v + (it.unit?(' '+it.unit):'');
+  if(it.type==='direct') return round1(v) + ' / ' + DIRECT_MAX;
+  if(it.type==='smooth') { const u=unitOf(it); return v + (u?(' '+u):''); }
   return '';
 }
 function describeValue(it){
   const v = state[it.id];
   if(it.type==='segment') return L(getOptionLabel(it, v));
-  if(it.type==='smooth')  return v + (it.unit?(' '+it.unit):'');
-  if(it.type==='direct')  return round1(v) + ' / ' + round1(weights[it.id]);
+  if(it.type==='smooth')  { const u=unitOf(it); return v + (u?(' '+u):''); }
+  if(it.type==='direct')  return round1(v) + ' / ' + DIRECT_MAX;
   if(it.type==='note')    return (v||'').trim();
   return '';
 }
@@ -429,75 +564,76 @@ function describeValue(it){
 const itemsEl = document.getElementById('items');
 function renderBody(){
   itemsEl.innerHTML = '';
-  let lastGroup = null;
-  CONFIG.forEach(it=>{
-    if(it.group !== lastGroup){
-      const g = document.createElement('div');
-      g.className = 'group-label';
-      g.textContent = L(GROUPS[it.group]);
-      itemsEl.appendChild(g);
-      lastGroup = it.group;
-    }
-    const card = document.createElement('div');
-    card.className = 'item';
+  GROUP_ORDER.forEach(g=>{
+    const items = CONFIG.filter(it=>it.group===g);
+    if(items.length===0) return;
+    const gl = document.createElement('div');
+    gl.className = 'group-label';
+    gl.textContent = L(GROUPS[g]);
+    itemsEl.appendChild(gl);
 
-    const head = document.createElement('div');
-    head.className = 'item-head';
-    head.innerHTML = `<span class="item-ic">${it.icon||''}</span><span class="item-name"></span>`;
-    head.querySelector('.item-name').textContent = L(it.label);
-    const valSpan = document.createElement('span');
-    valSpan.className = 'item-val';
-    valSpan.id = `val-${it.id}`;
-    if(it.type==='direct'||it.type==='smooth') valSpan.textContent = displayVal(it);
-    head.appendChild(valSpan);
-    card.appendChild(head);
+    items.forEach(it=>{
+      const card = document.createElement('div');
+      card.className = 'item';
 
-    if(it.type==='segment'){
-      const seg = document.createElement('div');
-      seg.className = 'seg';
-      it.options.forEach((o,idx)=>{
-        const b = document.createElement('button');
-        b.textContent = L(getOptionLabel(it,idx));
-        if(state[it.id]===idx) b.classList.add('on');
-        b.onclick = ()=>{
-          state[it.id]=idx;
-          seg.querySelectorAll('button').forEach(x=>x.classList.remove('on'));
-          b.classList.add('on');
+      const head = document.createElement('div');
+      head.className = 'item-head';
+      head.innerHTML = `<span class="item-ic">${it.icon||''}</span><span class="item-name"></span>`;
+      head.querySelector('.item-name').textContent = L(it.label);
+      const valSpan = document.createElement('span');
+      valSpan.className = 'item-val';
+      valSpan.id = `val-${it.id}`;
+      if(it.type==='direct'||it.type==='smooth') valSpan.textContent = displayVal(it);
+      head.appendChild(valSpan);
+      card.appendChild(head);
+
+      if(it.type==='segment'){
+        const seg = document.createElement('div');
+        seg.className = 'seg';
+        it.options.forEach((o,idx)=>{
+          const b = document.createElement('button');
+          b.textContent = L(getOptionLabel(it,idx));
+          if(state[it.id]===idx) b.classList.add('on');
+          b.onclick = ()=>{
+            state[it.id]=idx;
+            seg.querySelectorAll('button').forEach(x=>x.classList.remove('on'));
+            b.classList.add('on');
+            updateTotal();
+          };
+          seg.appendChild(b);
+        });
+        card.appendChild(seg);
+      } else if(it.type==='note'){
+        const ta = document.createElement('textarea');
+        ta.className = 'note-input';
+        ta.placeholder = L(it.placeholder);
+        ta.value = state[it.id] || '';
+        ta.rows = 3;
+        ta.oninput = ()=>{ state[it.id] = ta.value; };
+        card.appendChild(ta);
+      } else {
+        const row = document.createElement('div');
+        row.className = 'slider-row';
+        const range = document.createElement('input');
+        range.type = 'range';
+        if(it.type==='direct'){ range.min=0; range.max=DIRECT_MAX; range.step=DIRECT_STEP; }
+        else { range.min=it.min; range.max=it.max; range.step=it.step; }
+        range.value = state[it.id];
+        range.oninput = ()=>{
+          state[it.id] = parseFloat(range.value);
+          document.getElementById(`val-${it.id}`).textContent = displayVal(it);
           updateTotal();
         };
-        seg.appendChild(b);
-      });
-      card.appendChild(seg);
-    } else if(it.type==='note'){
-      const ta = document.createElement('textarea');
-      ta.className = 'note-input';
-      ta.placeholder = L(it.placeholder);
-      ta.value = state[it.id] || '';
-      ta.rows = 3;
-      ta.oninput = ()=>{ state[it.id] = ta.value; };
-      card.appendChild(ta);
-    } else {
-      const row = document.createElement('div');
-      row.className = 'slider-row';
-      const range = document.createElement('input');
-      range.type = 'range';
-      if(it.type==='direct'){ range.min=0; range.max=weights[it.id]; range.step=it.step; }
-      else { range.min=it.min; range.max=it.max; range.step=it.step; }
-      range.value = state[it.id];
-      range.oninput = ()=>{
-        state[it.id] = parseFloat(range.value);
-        document.getElementById(`val-${it.id}`).textContent = displayVal(it);
-        updateTotal();
-      };
-      row.appendChild(range);
-      card.appendChild(row);
-      if(it.hint){
-        const h = document.createElement('div');
-        h.className='hint'; h.textContent=L(it.hint);
-        card.appendChild(h);
+        row.appendChild(range);
+        card.appendChild(row);
+        if(it.hint){
+          const h = document.createElement('div');
+          h.className='hint'; h.textContent=L(it.hint);
+          card.appendChild(h);
+        }
       }
-    }
-    itemsEl.appendChild(card);
+      itemsEl.appendChild(card);
+    });
   });
 }
 
@@ -535,7 +671,7 @@ document.getElementById('resetBtn').onclick = ()=>{
   }
 };
 
-/* ---------- 复制评估描述 / 評価をコピー ---------- */
+/* ---------- 复制评估描述 ---------- */
 const copyBtn = document.getElementById('copyBtn');
 const COPY_ICON = copyBtn.innerHTML;
 const CHECK_ICON = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
@@ -543,15 +679,15 @@ const CHECK_ICON = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" 
 function buildDescription(){
   const s = score10();
   const lines = [ L(UI.title)+' '+s.toFixed(1)+'/10 · '+verdictOf(s).label, '' ];
-  let lastGroup=null;
-  CONFIG.forEach(it=>{
-    if(it.group!==lastGroup){ lines.push('【'+L(GROUPS[it.group])+'】'); lastGroup=it.group; }
-    if(it.type==='note'){
-      const txt = describeValue(it);
-      if(txt) lines.push('· '+L(it.label)+'：'+txt);
-      return;
-    }
-    lines.push('· '+L(it.label)+'：'+describeValue(it));
+  GROUP_ORDER.forEach(g=>{
+    const items = CONFIG.filter(it=>it.group===g);
+    if(items.length===0) return;
+    const printed = [];
+    items.forEach(it=>{
+      if(it.type==='note'){ const t=describeValue(it); if(t) printed.push('· '+L(it.label)+'：'+t); return; }
+      printed.push('· '+L(it.label)+'：'+describeValue(it));
+    });
+    if(printed.length){ lines.push('【'+L(GROUPS[g])+'】'); printed.forEach(p=>lines.push(p)); }
   });
   return lines.join('\n');
 }
@@ -581,14 +717,17 @@ copyBtn.onclick = doCopy;
 
 /* ---------- 设置面板 ---------- */
 const overlay = document.getElementById('overlay');
+const currencySeg = document.getElementById('currencySeg');
 const weightList = document.getElementById('weightList');
 const rangeList = document.getElementById('rangeList');
 const threshList = document.getElementById('threshList');
+const customList = document.getElementById('customList');
 const weightSumEl = document.getElementById('weightSum');
+const customNameInp = document.getElementById('customName');
+const customImpSel = document.getElementById('customImp');
 
-function setMaxUI(){
-  weightSumEl.textContent = round1(totalMax());
-}
+function setMaxUI(){ weightSumEl.textContent = round1(totalMax()); }
+function impName(v){ const m=IMPORTANCE.find(x=>x.v===v); return m?L(m.label):round1(v)+''; }
 
 function makeStepper(getVal, onApply, step){
   step = step || 0.5;
@@ -604,26 +743,55 @@ function makeStepper(getVal, onApply, step){
   return stepper;
 }
 
+// 货币
+function renderCurrency(){
+  currencySeg.innerHTML='';
+  CURRENCIES.forEach(c=>{
+    const b=document.createElement('button'); b.textContent=c.sym;
+    if(currency===c.id) b.classList.add('on');
+    b.onclick=()=>setCurrency(c.id);
+    currencySeg.appendChild(b);
+  });
+}
+function setCurrency(id){
+  currency=id;
+  try{ localStorage.setItem(LS_CURRENCY,id); }catch(e){}
+  renderCurrency(); renderRanges(); renderBody(); updateTotal();
+}
+
+// 重要度
 function renderWeights(){
   weightList.innerHTML = '';
   CONFIG.forEach(it=>{
-    if(it.weight==null) return;
-    const row = document.createElement('div'); row.className='wrow';
+    if(it.weight==null || it.type==='note') return;
+    const card = document.createElement('div'); card.className='wcard';
+    const top = document.createElement('div'); top.className='wcard-top';
     const wn = document.createElement('div'); wn.className='wn';
     wn.innerHTML = `<span></span><small></small>`;
     wn.querySelector('span').textContent = L(it.label);
     wn.querySelector('small').textContent = L(GROUPS[it.group]);
-    row.appendChild(wn);
+    top.appendChild(wn);
     const stepper = makeStepper(
       ()=>weights[it.id],
-      v=>{ weights[it.id]=Math.max(0, Math.round(v*2)/2); if(it.type==='direct') state[it.id]=Math.min(state[it.id], weights[it.id]); persistWeights(); setMaxUI(); updateTotal(); },
+      v=>{ weights[it.id]=Math.max(0, Math.round(v*2)/2); persistWeights(); setMaxUI(); updateTotal(); renderWeights(); },
       0.5
     );
-    row.appendChild(stepper);
-    weightList.appendChild(row);
+    top.appendChild(stepper);
+    card.appendChild(top);
+
+    const seg = document.createElement('div'); seg.className='imp-seg';
+    IMPORTANCE.forEach(lv=>{
+      const b=document.createElement('button'); b.textContent=L(lv.label);
+      if(weights[it.id]===lv.v) b.classList.add('on');
+      b.onclick=()=>{ weights[it.id]=lv.v; persistWeights(); setMaxUI(); updateTotal(); renderWeights(); };
+      seg.appendChild(b);
+    });
+    card.appendChild(seg);
+    weightList.appendChild(card);
   });
 }
 
+// 评分范围
 function rangeRow(labelText, getVal, onApply, step, unit){
   const row = document.createElement('div'); row.className='wrow';
   const wn = document.createElement('div'); wn.className='wn'; wn.textContent=labelText;
@@ -636,12 +804,14 @@ function rangeRow(labelText, getVal, onApply, step, unit){
 }
 function renderRanges(){
   rangeList.innerHTML='';
-  const a=byId('area'), r=byId('rent');
+  const a=byId('area'), r=byId('rent'), n=byId('nach');
   const apply = ()=>{ normalizeParams(); persistParams(); renderRanges(); renderBody(); updateTotal(); };
   rangeList.appendChild(rangeRow(L(UI.rangeAreaLow),  ()=>params.area.low,  v=>{ params.area.low=v;  apply(); }, a.step, a.unit));
   rangeList.appendChild(rangeRow(L(UI.rangeAreaHigh), ()=>params.area.high, v=>{ params.area.high=v; apply(); }, a.step, a.unit));
-  rangeList.appendChild(rangeRow(L(UI.rangeRentLow),  ()=>params.rent.low,  v=>{ params.rent.low=v;  apply(); }, r.step, r.unit));
-  rangeList.appendChild(rangeRow(L(UI.rangeRentHigh), ()=>params.rent.high, v=>{ params.rent.high=v; apply(); }, r.step, r.unit));
+  rangeList.appendChild(rangeRow(L(UI.rangeRentLow),  ()=>params.rent.low,  v=>{ params.rent.low=v;  apply(); }, r.step, unitOf(r)));
+  rangeList.appendChild(rangeRow(L(UI.rangeRentHigh), ()=>params.rent.high, v=>{ params.rent.high=v; apply(); }, r.step, unitOf(r)));
+  rangeList.appendChild(rangeRow(L(UI.rangeNachLow),  ()=>params.nach.low,  v=>{ params.nach.low=v;  apply(); }, n.step, unitOf(n)));
+  rangeList.appendChild(rangeRow(L(UI.rangeNachHigh), ()=>params.nach.high, v=>{ params.nach.high=v; apply(); }, n.step, unitOf(n)));
   [0,1,2].forEach(i=>{
     rangeList.appendChild(rangeRow(
       L(UI.rangeCommutePre)+(i+1)+L(UI.rangeCommuteSuf),
@@ -652,6 +822,7 @@ function renderRanges(){
   });
 }
 
+// 阈值
 function renderThresholds(){
   threshList.innerHTML='';
   const defs = [
@@ -672,7 +843,7 @@ function renderThresholds(){
         if(d.key==='good') thresholds.good = clamp(Math.max(v, thresholds.ok), 0, 10);
         else if(d.key==='ok') thresholds.ok = clamp(v, thresholds.mid, thresholds.good);
         else thresholds.mid = clamp(v, 0, thresholds.ok);
-        persistThresholds(); updateTotal();
+        persistThresholds(); updateTotal(); renderThresholds();
       },
       0.5
     );
@@ -682,7 +853,52 @@ function renderThresholds(){
   });
 }
 
-function renderSettings(){ renderWeights(); renderRanges(); renderThresholds(); setMaxUI(); }
+// 自定义项目
+let customType = 'segment';
+function fillImpSelect(){
+  const cur = customImpSel.value;
+  customImpSel.innerHTML='';
+  IMPORTANCE.forEach(lv=>{ const o=document.createElement('option'); o.value=lv.v; o.textContent=L(lv.label); customImpSel.appendChild(o); });
+  customImpSel.value = cur || '2';
+}
+function renderCustom(){
+  customList.innerHTML='';
+  if(customItems.length===0){
+    const e=document.createElement('div'); e.className='custom-empty'; e.textContent=L(UI.customEmpty);
+    customList.appendChild(e); return;
+  }
+  customItems.forEach(c=>{
+    const row=document.createElement('div'); row.className='custom-item';
+    const nm=document.createElement('div'); nm.className='ci-name';
+    nm.innerHTML='<span></span><small></small>';
+    nm.querySelector('span').textContent=c.label;
+    nm.querySelector('small').textContent=(c.type==='direct'?L(UI.customTypeRate):L(UI.customTypeBool))+' · '+impName(c.weight);
+    row.appendChild(nm);
+    const del=document.createElement('button'); del.className='ci-del'; del.textContent='×';
+    del.onclick=()=>removeCustom(c.id);
+    row.appendChild(del);
+    customList.appendChild(row);
+  });
+}
+function addCustom(){
+  const name=customNameInp.value.trim();
+  if(!name) return;
+  const imp=parseFloat(customImpSel.value)||2;
+  const id='c'+Date.now().toString(36);
+  customItems.push({ id, label:name, type:customType, weight:imp });
+  weights[id]=imp; state[id]=0;
+  persistCustom(); syncCustom();
+  customNameInp.value='';
+  renderSettings(); renderBody(); updateTotal();
+}
+function removeCustom(id){
+  customItems = customItems.filter(c=>c.id!==id);
+  delete weights[id]; delete state[id];
+  persistCustom(); syncCustom();
+  renderSettings(); renderBody(); updateTotal();
+}
+
+function renderSettings(){ renderCurrency(); renderWeights(); renderRanges(); renderThresholds(); renderCustom(); setMaxUI(); }
 
 document.getElementById('settingsBtn').onclick = ()=>{ renderSettings(); overlay.classList.add('show'); };
 function closeSheet(){ overlay.classList.remove('show'); renderBody(); updateTotal(); }
@@ -697,6 +913,13 @@ document.getElementById('resetAllBtn').onclick = ()=>{
   }
 };
 
+// 自定义表单交互
+const ctBool = document.getElementById('ctBool');
+const ctRate = document.getElementById('ctRate');
+ctBool.onclick = ()=>{ customType='segment'; ctBool.classList.add('on'); ctRate.classList.remove('on'); };
+ctRate.onclick = ()=>{ customType='direct';  ctRate.classList.add('on'); ctBool.classList.remove('on'); };
+document.getElementById('customAdd').onclick = addCustom;
+
 /* ---------- 语言切换 ---------- */
 const langZh = document.getElementById('langZh');
 const langJa = document.getElementById('langJa');
@@ -710,14 +933,23 @@ function applyLang(){
   document.getElementById('sheetTitle').textContent = L(UI.settingsTitle);
   document.getElementById('sheetSub').textContent = L(UI.sheetSub);
   document.getElementById('doneBtn').textContent = L(UI.done);
+  document.getElementById('secCurrencyLabel').textContent = L(UI.secCurrency);
   document.getElementById('secWeightsLabel').textContent = L(UI.secWeights);
+  document.getElementById('weightNote').textContent = L(UI.weightNote);
   document.getElementById('secRangesLabel').textContent = L(UI.secRanges);
   document.getElementById('rangeNote').textContent = L(UI.rangeNote);
   document.getElementById('secThreshLabel').textContent = L(UI.secThresh);
   document.getElementById('threshNote').textContent = L(UI.threshNote);
+  document.getElementById('secCustomLabel').textContent = L(UI.secCustom);
+  document.getElementById('customNote').textContent = L(UI.customNote);
+  customNameInp.placeholder = L(UI.customNamePh);
+  ctBool.textContent = L(UI.customTypeBool);
+  ctRate.textContent = L(UI.customTypeRate);
+  document.getElementById('customAdd').textContent = L(UI.customAdd);
   document.getElementById('wsPre').textContent = L(UI.wsPre);
   document.getElementById('wsSuf').textContent = L(UI.wsSuf);
   document.getElementById('resetAllBtn').textContent = L(UI.resetAll);
+  fillImpSelect();
   langZh.classList.toggle('on', lang==='zh');
   langJa.classList.toggle('on', lang==='ja');
   renderBody();
