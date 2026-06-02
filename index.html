@@ -285,9 +285,9 @@ const CURRENCIES = [
 const BASE_CONFIG = [
   // —— 核心指标（置顶）——
   { id:'area', label:{zh:'面积',ja:'広さ',en:'Area',de:'Fläche'}, icon:'⬚', group:'core', type:'smooth', weight:6,
-    min:30, max:120, lowBound:40, highBound:90, step:1, unit:'㎡', default:50 },
+    min:10, max:1000, lowBound:40, highBound:90, step:10, unit:'㎡', default:50 },
   { id:'rent', label:{zh:'月租金',ja:'月額家賃',en:'Rent',de:'Miete'}, icon:'◈', group:'core', type:'smooth', weight:6,
-    min:400, max:1600, lowBound:500, highBound:1200, inverted:true, step:10, currency:true, default:1000 },
+    min:0, max:10000000, lowBound:500, highBound:1200, inverted:true, step:10, stepped:true, currency:true, default:1000 },
   { id:'commute', label:{zh:'通勤时间',ja:'通勤時間',en:'Commute',de:'Arbeitsweg'}, icon:'➤', group:'core', type:'segment', weight:9, default:3,
     times:[10,15,20],
     options:[{factor:1},{factor:0.667},{factor:0.333},{factor:0}],
@@ -415,6 +415,41 @@ try{ const sc = localStorage.getItem(LS_CURRENCY); if(CURRENCIES.some(c=>c.id===
 function curSym(){ const c = CURRENCIES.find(x=>x.id===currency); return c ? c.sym : '€'; }
 function unitOf(it){ return it.currency ? curSym() : (it.unit||''); }
 function minUnit(){ return lang==='en' ? 'min' : lang==='de' ? 'Min.' : '分'; }
+// 金额分段步进：量级越大步长越大
+function moneyStep(v){
+  v = Math.abs(v);
+  if(v<1000)    return 10;
+  if(v<5000)    return 100;
+  if(v<10000)   return 500;
+  if(v<100000)  return 1000;
+  if(v<1000000) return 10000;
+  return 100000;
+}
+// ≥10000 显示为 xK
+function fmtAmount(v){ return v>=10000 ? round1(v/1000)+'K' : ''+v; }
+function parseAmount(s){
+  s = (''+s).trim().toUpperCase();
+  const k = s.endsWith('K');
+  const n = parseFloat(s);
+  if(isNaN(n)) return NaN;
+  return k ? n*1000 : n;
+}
+// 为大范围滑块生成分段刻度数组（索引模式）
+let RENT_STOPS = null;
+function moneyStops(it){
+  if(it.id==='rent' && RENT_STOPS) return RENT_STOPS;
+  const arr=[it.min]; let v=it.min, g=0;
+  while(v<it.max && g++<200000){ v=Math.round(v+moneyStep(v)); if(v>it.max) v=it.max; arr.push(v); }
+  if(it.id==='rent') RENT_STOPS=arr;
+  return arr;
+}
+function nearestStopIdx(stops, val){
+  if(val<=stops[0]) return 0;
+  if(val>=stops[stops.length-1]) return stops.length-1;
+  let best=0, bd=Infinity;
+  for(let i=0;i<stops.length;i++){ const d=Math.abs(stops[i]-val); if(d<bd){bd=d;best=i;} }
+  return best;
+}
 
 // 自定义项目
 function buildCustomItem(c){
@@ -552,13 +587,13 @@ function total(){ return CONFIG.reduce((s,it)=>s+itemScore(it),0); }
 function displayVal(it){
   const v = state[it.id];
   if(it.type==='direct') return round1(v) + ' / ' + DIRECT_MAX;
-  if(it.type==='smooth') { const u=unitOf(it); return v + (u?(' '+u):''); }
+  if(it.type==='smooth') { const u=unitOf(it); const num=it.currency?fmtAmount(v):v; return num + (u?(' '+u):''); }
   return '';
 }
 function describeValue(it){
   const v = state[it.id];
   if(it.type==='segment') return L(getOptionLabel(it, v));
-  if(it.type==='smooth')  { const u=unitOf(it); return v + (u?(' '+u):''); }
+  if(it.type==='smooth')  { const u=unitOf(it); const num=it.currency?fmtAmount(v):v; return num + (u?(' '+u):''); }
   if(it.type==='direct')  return round1(v) + ' / ' + DIRECT_MAX;
   if(it.type==='note')    return (v||'').trim();
   return '';
@@ -620,14 +655,24 @@ function renderBody(){
         row.className = 'slider-row';
         const range = document.createElement('input');
         range.type = 'range';
-        if(it.type==='direct'){ range.min=0; range.max=DIRECT_MAX; range.step=DIRECT_STEP; }
-        else { range.min=it.min; range.max=it.max; range.step=it.step; }
-        range.value = state[it.id];
-        range.oninput = ()=>{
-          state[it.id] = parseFloat(range.value);
+        const applySlider = ()=>{
           document.getElementById(`val-${it.id}`).textContent = displayVal(it);
           updateTotal();
         };
+        if(it.type==='direct'){
+          range.min=0; range.max=DIRECT_MAX; range.step=DIRECT_STEP;
+          range.value = state[it.id];
+          range.oninput = ()=>{ state[it.id] = parseFloat(range.value); applySlider(); };
+        } else if(it.stepped){
+          const stops = moneyStops(it);
+          range.min=0; range.max=stops.length-1; range.step=1;
+          range.value = nearestStopIdx(stops, state[it.id]);
+          range.oninput = ()=>{ state[it.id] = stops[parseInt(range.value,10)]; applySlider(); };
+        } else {
+          range.min=it.min; range.max=it.max; range.step=it.step;
+          range.value = state[it.id];
+          range.oninput = ()=>{ state[it.id] = parseFloat(range.value); applySlider(); };
+        }
         row.appendChild(range);
         card.appendChild(row);
         if(it.hint){
@@ -735,16 +780,18 @@ const customImpSel = document.getElementById('customImp');
 function setMaxUI(){ weightSumEl.textContent = round1(totalMax()); }
 function impName(v){ const m=IMPORTANCE.find(x=>x.v===v); return m?L(m.label):round1(v)+''; }
 
-function makeStepper(getVal, onApply, step){
-  step = step || 0.5;
+function makeStepper(getVal, onApply, step, fmt, parse){
+  const stepOf = (typeof step==='function') ? step : (()=>step||0.5);
+  const show = fmt || (v=>round1(v));
+  const read = parse || (s=>parseFloat(s));
   const stepper = document.createElement('div'); stepper.className='stepper';
   const minus = document.createElement('button'); minus.textContent='–';
-  const inp = document.createElement('input'); inp.type='text'; inp.inputMode='decimal'; inp.value=round1(getVal());
+  const inp = document.createElement('input'); inp.type='text'; inp.inputMode='decimal'; inp.value=show(getVal());
   const plus = document.createElement('button'); plus.textContent='+';
-  const commit = v=>{ onApply(v); inp.value=round1(getVal()); };
-  minus.onclick=()=>commit(getVal()-step);
-  plus.onclick =()=>commit(getVal()+step);
-  inp.onchange =()=>{ const n=parseFloat(inp.value); commit(isNaN(n)?getVal():n); };
+  const commit = v=>{ onApply(v); inp.value=show(getVal()); };
+  minus.onclick=()=>commit(getVal()-stepOf(getVal()));
+  plus.onclick =()=>commit(getVal()+stepOf(getVal()));
+  inp.onchange =()=>{ const n=read(inp.value); commit(isNaN(n)?getVal():n); };
   stepper.appendChild(minus); stepper.appendChild(inp); stepper.appendChild(plus);
   return stepper;
 }
@@ -798,12 +845,12 @@ function renderWeights(){
 }
 
 // 评分范围
-function rangeRow(labelText, getVal, onApply, step, unit){
+function rangeRow(labelText, getVal, onApply, step, unit, fmt, parse){
   const row = document.createElement('div'); row.className='wrow';
   const wn = document.createElement('div'); wn.className='wn'; wn.textContent=labelText;
   row.appendChild(wn);
   const side = document.createElement('div'); side.className='thr-side';
-  side.appendChild(makeStepper(getVal, onApply, step));
+  side.appendChild(makeStepper(getVal, onApply, step, fmt, parse));
   if(unit){ const u=document.createElement('span'); u.className='thr-ge'; u.textContent=unit; side.appendChild(u); }
   row.appendChild(side);
   return row;
@@ -814,8 +861,8 @@ function renderRanges(){
   const apply = ()=>{ normalizeParams(); persistParams(); renderRanges(); renderBody(); updateTotal(); };
   rangeList.appendChild(rangeRow(L(UI.rangeAreaLow),  ()=>params.area.low,  v=>{ params.area.low=v;  apply(); }, a.step, a.unit));
   rangeList.appendChild(rangeRow(L(UI.rangeAreaHigh), ()=>params.area.high, v=>{ params.area.high=v; apply(); }, a.step, a.unit));
-  rangeList.appendChild(rangeRow(L(UI.rangeRentLow),  ()=>params.rent.low,  v=>{ params.rent.low=v;  apply(); }, r.step, unitOf(r)));
-  rangeList.appendChild(rangeRow(L(UI.rangeRentHigh), ()=>params.rent.high, v=>{ params.rent.high=v; apply(); }, r.step, unitOf(r)));
+  rangeList.appendChild(rangeRow(L(UI.rangeRentLow),  ()=>params.rent.low,  v=>{ params.rent.low=v;  apply(); }, moneyStep, unitOf(r), fmtAmount, parseAmount));
+  rangeList.appendChild(rangeRow(L(UI.rangeRentHigh), ()=>params.rent.high, v=>{ params.rent.high=v; apply(); }, moneyStep, unitOf(r), fmtAmount, parseAmount));
   rangeList.appendChild(rangeRow(L(UI.rangeNachLow),  ()=>params.nach.low,  v=>{ params.nach.low=v;  apply(); }, n.step, unitOf(n)));
   rangeList.appendChild(rangeRow(L(UI.rangeNachHigh), ()=>params.nach.high, v=>{ params.nach.high=v; apply(); }, n.step, unitOf(n)));
   [0,1,2].forEach(i=>{
