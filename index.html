@@ -86,6 +86,8 @@
   input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:24px;height:24px;border-radius:50%;background:var(--ink);cursor:pointer;border:3px solid var(--card);box-shadow:0 1px 4px rgba(0,0,0,.22);}
   input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:50%;background:var(--ink);cursor:pointer;border:3px solid var(--card);box-shadow:0 1px 4px rgba(0,0,0,.22);}
   .hint{font-size:11.5px;color:var(--ink-soft);margin-top:6px;}
+  .floor-invert{margin-top:8px;width:100%;min-height:36px;border-radius:10px;border:1px solid var(--line-strong);background:var(--chip);color:var(--chip-text);font-family:var(--font-ui);font-size:12.5px;font-weight:500;cursor:pointer;transition:background .14s,color .14s,border-color .14s;}
+  .floor-invert.on{background:var(--sel-bg);color:var(--sel-text);border-color:var(--sel-bg);}
   .note-input{width:100%;border:1px solid var(--line-strong);border-radius:11px;background:var(--chip);color:var(--ink);font-family:var(--font-ui);font-size:14px;line-height:1.55;padding:10px 12px;resize:vertical;min-height:72px;}
   .note-input:focus{outline:none;border-color:var(--ink-soft);background:var(--card);}
   .note-input::placeholder{color:var(--ink-soft);}
@@ -321,6 +323,8 @@ const BASE_CONFIG = [
     hint:{zh:'0 压抑 — 5 开阔', ja:'0 圧迫 — 5 開放的', en:'0 cramped — 5 open', de:'0 eng — 5 offen'} },
   { id:'floor', label:{zh:'楼层',ja:'階数',en:'Floor',de:'Etage'}, icon:'⌂', group:'space', type:'segment', weight:4, default:1,
     options:[{label:{zh:'0–1楼',ja:'0〜1階',en:'0–1F',de:'EG–1'},factor:1},{label:{zh:'其他',ja:'その他',en:'Other',de:'Andere'},factor:0.5},{label:{zh:'顶楼',ja:'最上階',en:'Top',de:'Dach'},factor:0}] },
+  { id:'elevator', label:{zh:'电梯',ja:'エレベーター',en:'Elevator',de:'Aufzug'}, icon:'⇕', group:'space', type:'segment', default:0,
+    options:[{label:{zh:'无',ja:'なし',en:'No',de:'Nein'},factor:0},{label:{zh:'有',ja:'あり',en:'Yes',de:'Ja'},factor:1}] },
   { id:'storage', label:{zh:'储物空间',ja:'収納スペース',en:'Storage',de:'Stauraum'}, icon:'☰', group:'space', type:'segment', weight:1, default:0,
     options:[{label:{zh:'无',ja:'なし',en:'No',de:'Nein'},factor:0},{label:{zh:'有',ja:'あり',en:'Yes',de:'Ja'},factor:1}] },
   { id:'basement', label:{zh:'地下室',ja:'地下室',en:'Basement',de:'Keller'}, icon:'⬓', group:'space', type:'segment', weight:1, default:0,
@@ -329,9 +333,9 @@ const BASE_CONFIG = [
     options:[{label:{zh:'放得下',ja:'置ける',en:'Fits',de:'Passt'},factor:1},{label:{zh:'放不下',ja:'置けない',en:'No fit',de:'Passt nicht'},factor:0}] },
 
   // —— 经济与条件 ——
-  { id:'nach', label:{zh:'Nach 费用',ja:'Nach 費用',en:'Nach cost',de:'Nach-Kosten'}, icon:'◇', group:'cost', type:'smooth', weight:3,
-    min:0, max:3000, lowBound:500, highBound:3000, inverted:true, step:50, currency:true, default:0,
-    hint:{zh:'额外/一次性费用 · 越低越好', ja:'追加・初期費用 · 低いほど良い', en:'Extra / one-off cost · lower is better', de:'Zusatz-/Einmalkosten · niedriger ist besser'} },
+  { id:'nach', label:{zh:'Key money',ja:'Key money',en:'Key money',de:'Nach-Kosten'}, icon:'◇', group:'cost', type:'smooth', weight:3,
+    min:0, max:9999, lowBound:0, highBound:3000, inverted:true, step:50, currency:true, default:0,
+    hint:{zh:'一次性礼金 · 越低越好', ja:'礼金など · 低いほど良い', en:'One-off key money · lower is better', de:'Einmalige Ablöse · niedriger ist besser'} },
   { id:'reno', label:{zh:'装修状况',ja:'内装の状態',en:'Condition',de:'Zustand'}, icon:'✎', group:'cost', type:'direct', weight:4, default:0,
     hint:{zh:'0 旧 — 5 新', ja:'0 古い — 5 新しい', en:'0 old — 5 new', de:'0 alt — 5 neu'} },
   { id:'parking', label:{zh:'停车场',ja:'駐車場',en:'Parking',de:'Parkplatz'}, icon:'⊟', group:'cost', type:'segment', weight:1, default:0,
@@ -389,13 +393,15 @@ const UI = {
   resetAll:     {zh:'恢复默认设置', ja:'設定を初期化', en:'Restore defaults', de:'Zurücksetzen'},
   confirmReset: {zh:'清空本次所有评分？（设置会保留）', ja:'今回のスコアをすべてクリアしますか？（設定は保持）', en:'Clear all entries this round? (settings kept)', de:'Alle Eingaben löschen? (Einstellungen bleiben)'},
   confirmResetAll:{zh:'恢复重要度、范围、阈值为默认值？（自定义项目会保留）', ja:'重要度・範囲・しきい値を初期値に戻しますか？（カスタム項目は保持）', en:'Reset importance, ranges and thresholds to default? (custom items kept)', de:'Wichtigkeit, Bereiche und Schwellen zurücksetzen? (eigene Punkte bleiben)'},
+  floorInvert:  {zh:'⇅ 偏好高层', ja:'⇅ 高層を優先', en:'⇅ Prefer high floor', de:'⇅ Höhere Etage bevorzugen'},
 };
 
 /* ===================== 逻辑 / ロジック ===================== */
 
 const LS_WEIGHTS  = 'houseScoreWeights_v4';
 const LS_THRESH   = 'houseScoreThresholds_v3';
-const LS_PARAMS   = 'houseScoreParams_v3';
+const LS_PARAMS   = 'houseScoreParams_v4';
+const LS_FLOORINV = 'houseScoreFloorInv_v1';
 const LS_LANG     = 'houseScoreLang_v1';
 const LS_CURRENCY = 'houseScoreCurrency_v1';
 const LS_CUSTOM   = 'houseScoreCustom_v1';
@@ -435,12 +441,9 @@ function parseAmount(s){
   return k ? n*1000 : n;
 }
 // 为大范围滑块生成分段刻度数组（索引模式）
-let RENT_STOPS = null;
-function moneyStops(it){
-  if(it.id==='rent' && RENT_STOPS) return RENT_STOPS;
-  const arr=[it.min]; let v=it.min, g=0;
-  while(v<it.max && g++<200000){ v=Math.round(v+moneyStep(v)); if(v>it.max) v=it.max; arr.push(v); }
-  if(it.id==='rent') RENT_STOPS=arr;
+function moneyStops(lo, hi){
+  const arr=[lo]; let v=lo, g=0;
+  while(v<hi && g++<200000){ v=Math.round(v+moneyStep(v)); if(v>hi) v=hi; arr.push(v); }
   return arr;
 }
 function nearestStopIdx(stops, val){
@@ -559,8 +562,25 @@ function syncCustom(){
 }
 
 /* ---------- 计分 ---------- */
+// nach（礼金）在人民币/日元下隐藏且不计分
+function isHidden(it){ return it.id==='nach' && (currency==='CNY'||currency==='JPY'); }
+
+// 楼层偏好反转（喜欢高层）
+let floorInverted = false;
+try{ floorInverted = localStorage.getItem(LS_FLOORINV)==='1'; }catch(e){}
+function persistFloorInv(){ try{ localStorage.setItem(LS_FLOORINV, floorInverted?'1':'0'); }catch(e){} }
+
+// 楼层(0=0–1楼 / 1=其他 / 2=顶楼) × 电梯 联合因子；行=楼层，列=[无电梯, 有电梯]
+function floorElevatorFactor(floorIdx, hasElevator, inv){
+  const normal   = [[1,1],[0.5,1],[0,0.5]];
+  const reversed = [[0.5,0],[0,0.5],[0.5,1]];
+  const row = (inv?reversed:normal)[floorIdx] || [0,0];
+  return row[hasElevator?1:0];
+}
+
 function factorOf(it){
   const v = state[it.id];
+  if(it.id==='floor') return floorElevatorFactor(v, state['elevator']===1, floorInverted);
   if(it.type==='segment') return it.options[v] ? it.options[v].factor : 0;
   if(it.type==='direct')  return clamp(v,0,DIRECT_MAX)/DIRECT_MAX;
   if(it.type==='smooth'){
@@ -572,11 +592,11 @@ function factorOf(it){
   return 0;
 }
 function itemScore(it){
-  if(it.type==='note') return 0;
+  if(it.type==='note' || isHidden(it)) return 0;
   return factorOf(it) * (weights[it.id]||0);
 }
 function itemMax(it){
-  if(it.type==='note') return 0;
+  if(it.type==='note' || isHidden(it)) return 0;
   const w = weights[it.id]||0;
   if(it.type==='segment') return Math.max(0, ...it.options.map(o=>o.factor)) * w;
   return w;
@@ -612,6 +632,7 @@ function renderBody(){
     itemsEl.appendChild(gl);
 
     items.forEach(it=>{
+      if(isHidden(it)) return;
       const card = document.createElement('div');
       card.className = 'item';
 
@@ -642,6 +663,13 @@ function renderBody(){
           seg.appendChild(b);
         });
         card.appendChild(seg);
+        if(it.id==='floor'){
+          const tog=document.createElement('button');
+          tog.className='floor-invert'+(floorInverted?' on':'');
+          tog.textContent=L(UI.floorInvert);
+          tog.onclick=()=>{ floorInverted=!floorInverted; persistFloorInv(); tog.classList.toggle('on',floorInverted); updateTotal(); };
+          card.appendChild(tog);
+        }
       } else if(it.type==='note'){
         const ta = document.createElement('textarea');
         ta.className = 'note-input';
@@ -664,13 +692,15 @@ function renderBody(){
           range.value = state[it.id];
           range.oninput = ()=>{ state[it.id] = parseFloat(range.value); applySlider(); };
         } else if(it.stepped){
-          const stops = moneyStops(it);
+          const r = getRange(it);
+          const stops = moneyStops(Math.min(r.low,r.high), Math.max(r.low,r.high));
           range.min=0; range.max=stops.length-1; range.step=1;
           range.value = nearestStopIdx(stops, state[it.id]);
           range.oninput = ()=>{ state[it.id] = stops[parseInt(range.value,10)]; applySlider(); };
         } else {
-          range.min=it.min; range.max=it.max; range.step=it.step;
-          range.value = state[it.id];
+          const r = getRange(it);
+          range.min=Math.min(r.low,r.high); range.max=Math.max(r.low,r.high); range.step=it.step;
+          range.value = clamp(state[it.id], +range.min, +range.max);
           range.oninput = ()=>{ state[it.id] = parseFloat(range.value); applySlider(); };
         }
         row.appendChild(range);
@@ -735,6 +765,7 @@ function buildDescription(){
     if(items.length===0) return;
     const printed = [];
     items.forEach(it=>{
+      if(isHidden(it)) return;
       if(it.type==='note'){ const t=describeValue(it); if(t) printed.push('· '+L(it.label)+sep+t); return; }
       printed.push('· '+L(it.label)+sep+describeValue(it));
     });
@@ -809,14 +840,14 @@ function renderCurrency(){
 function setCurrency(id){
   currency=id;
   try{ localStorage.setItem(LS_CURRENCY,id); }catch(e){}
-  renderCurrency(); renderRanges(); renderBody(); updateTotal();
+  renderCurrency(); renderWeights(); renderRanges(); renderBody(); updateTotal();
 }
 
 // 重要度
 function renderWeights(){
   weightList.innerHTML = '';
   CONFIG.forEach(it=>{
-    if(it.weight==null || it.type==='note') return;
+    if(it.weight==null || it.type==='note' || isHidden(it)) return;
     const card = document.createElement('div'); card.className='wcard';
     const top = document.createElement('div'); top.className='wcard-top';
     const wn = document.createElement('div'); wn.className='wn';
@@ -863,8 +894,10 @@ function renderRanges(){
   rangeList.appendChild(rangeRow(L(UI.rangeAreaHigh), ()=>params.area.high, v=>{ params.area.high=v; apply(); }, a.step, a.unit));
   rangeList.appendChild(rangeRow(L(UI.rangeRentLow),  ()=>params.rent.low,  v=>{ params.rent.low=v;  apply(); }, moneyStep, unitOf(r), fmtAmount, parseAmount));
   rangeList.appendChild(rangeRow(L(UI.rangeRentHigh), ()=>params.rent.high, v=>{ params.rent.high=v; apply(); }, moneyStep, unitOf(r), fmtAmount, parseAmount));
-  rangeList.appendChild(rangeRow(L(UI.rangeNachLow),  ()=>params.nach.low,  v=>{ params.nach.low=v;  apply(); }, n.step, unitOf(n)));
-  rangeList.appendChild(rangeRow(L(UI.rangeNachHigh), ()=>params.nach.high, v=>{ params.nach.high=v; apply(); }, n.step, unitOf(n)));
+  if(!isHidden(n)){
+    rangeList.appendChild(rangeRow(L(UI.rangeNachLow),  ()=>params.nach.low,  v=>{ params.nach.low=v;  apply(); }, n.step, unitOf(n)));
+    rangeList.appendChild(rangeRow(L(UI.rangeNachHigh), ()=>params.nach.high, v=>{ params.nach.high=v; apply(); }, n.step, unitOf(n)));
+  }
   [0,1,2].forEach(i=>{
     rangeList.appendChild(rangeRow(
       L(UI.rangeCommutePre)+(i+1)+L(UI.rangeCommuteSuf),
